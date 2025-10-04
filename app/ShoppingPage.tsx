@@ -120,7 +120,8 @@ export default function ShoppingPage({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  // transparent so the background image shows through
+  container: { flex: 1, backgroundColor: 'transparent' },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
