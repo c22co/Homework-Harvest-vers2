@@ -1,87 +1,170 @@
-import React, { useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Platform } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  Dimensions,
+  Platform,
+} from 'react-native';
 import { useCurrency } from '@/components/CurrencyContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-export default function PlayerController({ pumpkins, setPumpkins }) {
-  const [position, setPosition] = useState({ x: SCREEN_WIDTH / 2 - 20, y: SCREEN_HEIGHT / 2 - 20 });
-  const animatedX = useRef(new Animated.Value(SCREEN_WIDTH / 2 - 20)).current;
-  const animatedY = useRef(new Animated.Value(SCREEN_HEIGHT / 2 - 20)).current;
-  const { add_currency } = useCurrency();
+type PumpkinItem = { id: string; x: number; y: number };
 
-  const MOVE_SPEED = 20;
+export default function PlayerController({
+  pumpkins,
+  setPumpkins,
+}: {
+  pumpkins: PumpkinItem[];
+  setPumpkins: (updater: (prev: PumpkinItem[]) => PumpkinItem[]) => void;
+}) {
   const CHARACTER_SIZE = 40;
   const PUMPKIN_SIZE = 40;
+  const MOVE_SPEED_PX_PER_SEC = 240; // tune this for speed (px/sec)
 
-  // Collision detection
-  const checkCollision = (x, y) => {
-    pumpkins.forEach(pumpkin => {
-      const dx = Math.abs(x - pumpkin.x);
-      const dy = Math.abs(y - pumpkin.y);
+  const initial = {
+    x: SCREEN_WIDTH / 2 - CHARACTER_SIZE / 2,
+    y: SCREEN_HEIGHT / 2 - CHARACTER_SIZE / 2,
+  };
 
-      // Check if the player overlaps with the pumpkin
-      if (dx < (CHARACTER_SIZE / 2 + PUMPKIN_SIZE / 2) && dy < (CHARACTER_SIZE / 2 + PUMPKIN_SIZE / 2)) {
-        console.log(`Collision detected! Player: (${x}, ${y}), Pumpkin: (${pumpkin.x}, ${pumpkin.y})`);
-        // Remove pumpkin
+  // keep a small state only for initialization / occasional reads
+  const [position] = useState(initial);
+  const positionRef = useRef({ ...initial }); // authoritative per-frame position
+
+  const animatedX = useRef(new Animated.Value(positionRef.current.x)).current;
+  const animatedY = useRef(new Animated.Value(positionRef.current.y)).current;
+  const { add_currency } = useCurrency();
+
+  // pumpkins ref to avoid stale closure
+  const pumpkinsRef = useRef<PumpkinItem[]>(pumpkins);
+  useEffect(() => {
+    pumpkinsRef.current = pumpkins;
+  }, [pumpkins]);
+
+  // key tracking
+  const keysPressed = useRef<Record<string, boolean>>({});
+  const rafId = useRef<number | null>(null);
+  const lastTimeRef = useRef<number | null>(null);
+
+  const checkCollision = (px: number, py: number) => {
+    const playerRect = {
+      left: px,
+      right: px + CHARACTER_SIZE,
+      top: py,
+      bottom: py + CHARACTER_SIZE,
+    };
+
+    for (const pumpkin of [...pumpkinsRef.current]) {
+      const pRect = {
+        left: pumpkin.x,
+        right: pumpkin.x + PUMPKIN_SIZE,
+        top: pumpkin.y,
+        bottom: pumpkin.y + PUMPKIN_SIZE,
+      };
+
+      const isColliding =
+        playerRect.left < pRect.right &&
+        playerRect.right > pRect.left &&
+        playerRect.top < pRect.bottom &&
+        playerRect.bottom > pRect.top;
+
+      if (isColliding) {
         setPumpkins(prev => prev.filter(p => p.id !== pumpkin.id));
-        // Add random currency
         const reward = Math.floor(Math.random() * 50) + 1;
         add_currency(reward);
       }
-    });
+    }
   };
 
-  const moveLeft = () => {
-    setPosition(prev => {
-      const newX = Math.max(0, prev.x - MOVE_SPEED);
-      Animated.timing(animatedX, {
-        toValue: newX,
-        duration: 100,
-        useNativeDriver: false,
-      }).start();
-      checkCollision(newX, prev.y);
-      return { ...prev, x: newX };
-    });
+  // update visuals immediately (no timing animation each tick)
+  const applyPosition = (x: number, y: number) => {
+    positionRef.current.x = x;
+    positionRef.current.y = y;
+    animatedX.setValue(x);
+    animatedY.setValue(y);
+    checkCollision(x, y);
   };
 
-  const moveRight = () => {
-    setPosition(prev => {
-      const newX = Math.min(SCREEN_WIDTH - CHARACTER_SIZE, prev.x + MOVE_SPEED);
-      Animated.timing(animatedX, {
-        toValue: newX,
-        duration: 100,
-        useNativeDriver: false,
-      }).start();
-      checkCollision(newX, prev.y);
-      return { ...prev, x: newX };
-    });
+  // rAF loop for smooth movement
+  const loop = (time: number) => {
+    if (lastTimeRef.current == null) lastTimeRef.current = time;
+    const dtMs = time - lastTimeRef.current;
+    lastTimeRef.current = time;
+    const dt = dtMs / 1000; // seconds
+    let moved = false;
+
+    let newX = positionRef.current.x;
+    let newY = positionRef.current.y;
+    const delta = MOVE_SPEED_PX_PER_SEC * dt;
+
+    if (keysPressed.current['a'] || keysPressed.current['arrowleft']) {
+      newX = Math.max(0, newX - delta);
+      moved = true;
+    }
+    if (keysPressed.current['d'] || keysPressed.current['arrowright']) {
+      newX = Math.min(SCREEN_WIDTH - CHARACTER_SIZE, newX + delta);
+      moved = true;
+    }
+    if (keysPressed.current['w'] || keysPressed.current['arrowup']) {
+      newY = Math.max(0, newY - delta);
+      moved = true;
+    }
+    if (keysPressed.current['s'] || keysPressed.current['arrowdown']) {
+      newY = Math.min(SCREEN_HEIGHT - CHARACTER_SIZE - 150, newY + delta);
+      moved = true;
+    }
+
+    if (moved) {
+      applyPosition(newX, newY);
+      rafId.current = requestAnimationFrame(loop);
+    } else {
+      // stop loop
+      lastTimeRef.current = null;
+      rafId.current = null;
+    }
   };
 
-  const moveUp = () => {
-    setPosition(prev => {
-      const newY = Math.max(0, prev.y - MOVE_SPEED);
-      Animated.timing(animatedY, {
-        toValue: newY,
-        duration: 100,
-        useNativeDriver: false,
-      }).start();
-      checkCollision(prev.x, newY);
-      return { ...prev, y: newY };
-    });
+  const startLoopIfNeeded = () => {
+    if (rafId.current == null) {
+      lastTimeRef.current = null;
+      rafId.current = requestAnimationFrame(loop);
+    }
   };
 
-  const moveDown = () => {
-    setPosition(prev => {
-      const newY = Math.min(SCREEN_HEIGHT - CHARACTER_SIZE - 150, prev.y + MOVE_SPEED);
-      Animated.timing(animatedY, {
-        toValue: newY,
-        duration: 100,
-        useNativeDriver: false,
-      }).start();
-      checkCollision(prev.x, newY);
-      return { ...prev, y: newY };
-    });
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase();
+      if (!keysPressed.current[k]) {
+        keysPressed.current[k] = true;
+        startLoopIfNeeded();
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase();
+      keysPressed.current[k] = false;
+      // loop will stop itself when no keys are pressed
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      if (rafId.current != null) cancelAnimationFrame(rafId.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // on-screen buttons must use positionRef
+  const nudge = (dx: number, dy: number) => {
+    const px = Math.min(Math.max(0, positionRef.current.x + dx), SCREEN_WIDTH - CHARACTER_SIZE);
+    const py = Math.min(Math.max(0, positionRef.current.y + dy), SCREEN_HEIGHT - CHARACTER_SIZE - 150);
+    applyPosition(px, py);
   };
 
   return (
@@ -90,117 +173,36 @@ export default function PlayerController({ pumpkins, setPumpkins }) {
         <Animated.View
           style={[
             styles.character,
-            {
-              left: animatedX,
-              top: animatedY,
-            },
+            { left: animatedX as any, top: animatedY as any },
           ]}
         >
           <Text style={styles.characterText}>🧑</Text>
         </Animated.View>
       </View>
-      <View style={styles.controlsContainer}>
-        <View style={styles.arrowContainer}>
-          <View style={styles.arrowRow}>
-            <TouchableOpacity style={styles.arrowButton} onPress={moveUp}>
-              <Text style={styles.arrow}>↑</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.arrowRow}>
-            <TouchableOpacity style={styles.arrowButton} onPress={moveLeft}>
-              <Text style={styles.arrow}>←</Text>
-            </TouchableOpacity>
-            <View style={styles.spacer} />
-            <TouchableOpacity style={styles.arrowButton} onPress={moveRight}>
-              <Text style={styles.arrow}>→</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.arrowRow}>
-            <TouchableOpacity style={styles.arrowButton} onPress={moveDown}>
-              <Text style={styles.arrow}>↓</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
 
-      {/* Keyboard hint for desktop */}
-      {Platform.OS === 'web' && (
-        <View style={styles.keyboardHint}>
-          <Text style={styles.hintText}>Use WASD or Arrow Keys to move</Text>
-        </View>
-      )}
+      <View style={styles.controlsContainer}>
+        <TouchableOpacity style={styles.arrowButton} onPress={() => nudge(-20, 0)}>
+          <Text>←</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.arrowButton} onPress={() => nudge(20, 0)}>
+          <Text>→</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.arrowButton} onPress={() => nudge(0, -20)}>
+          <Text>↑</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.arrowButton} onPress={() => nudge(0, 20)}>
+          <Text>↓</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#90EE90',
-  },
-  gameArea: {
-    flex: 1,
-    position: 'relative',
-  },
-  character: {
-    position: 'absolute',
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  characterText: {
-    fontSize: 40,
-  },
-  controlsContainer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-  },
-  arrowContainer: {
-    alignItems: 'center',
-  },
-  arrowRow: {
-    flexDirection: 'row',
-    gap: 5,
-    justifyContent: 'center',
-    marginVertical: 3,
-  },
-  arrowButton: {
-    width: 45,
-    height: 45,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderRadius: 22.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  arrowButtonActive: {
-    backgroundColor: 'rgba(100, 200, 255, 0.9)',
-  },
-  arrow: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  spacer: {
-    width: 45,
-  },
-  keyboardHint: {
-    position: 'absolute',
-    top: 20,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  hintText: {
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 15,
-    fontSize: 12,
-  },
+  container: { flex: 1, backgroundColor: '#90EE90' },
+  gameArea: { flex: 1, position: 'relative' },
+  character: { position: 'absolute', width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  characterText: { fontSize: 40 },
+  controlsContainer: { position: 'absolute', bottom: 20, left: 20 },
+  arrowButton: { width: 45, height: 45, backgroundColor: 'rgba(255,255,255,0.8)', justifyContent: 'center', alignItems: 'center', margin: 5, borderRadius: 22.5 },
 });
