@@ -237,6 +237,7 @@ const styles = StyleSheet.create({
   gameArea: { flex: 1, position: 'relative' },
   character: { position: 'absolute', width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   characterText: { fontSize: 40 },
-  controlsContainer: { position: 'absolute', bottom: 20, left: 20 },
-  arrowButton: { width: 45, height: 45, backgroundColor: 'rgba(255,255,255,0.8)', justifyContent: 'center', alignItems: 'center', margin: 5, borderRadius: 22.5 },
+  // ensure controls sit above the UI overlay and other layers
+  controlsContainer: { position: 'absolute', bottom: 20, left: 20, zIndex: 300, elevation: 30 },
+  arrowButton: { width: 45, height: 45, backgroundColor: 'rgba(255,255,255,0.9)', justifyContent: 'center', alignItems: 'center', margin: 5, borderRadius: 22.5 },
 });

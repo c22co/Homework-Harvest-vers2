@@ -1,11 +1,15 @@
-import React from 'react';
-import { Dimensions, StyleSheet, View, TouchableOpacity, Text, Animated } from 'react-native';
 import PlayerController from '@/app/PlayerController';
-import TodoList from '@/components/TodoList';
 import CompletedTasks from '@/components/CompletedTasks';
 import CurrencyDisplay from '@/components/CurrencyDisplay';
-import { CurrencyProvider } from '@/components/CurrencyContext';
+import TodoList from '@/components/TodoList';
+import React from 'react';
+import { Animated, Dimensions, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+// remove the extra provider here (top-level provider is in _layout.tsx)
+// import { CurrencyProvider } from '@/components/CurrencyContext';
 import { TodoProvider } from '@/components/TodoContext';
+
+// require the asset relative to this file
+const bg = require('../../assets/images/background.png');
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -40,7 +44,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <CurrencyProvider>
+    <ImageBackground source={bg} style={styles.background} resizeMode="cover">
       <TodoProvider>
         <View style={styles.container}>
           <PlayerController
@@ -71,12 +75,15 @@ export default function HomeScreen() {
           </View>
         </View>
       </TodoProvider>
-    </CurrencyProvider>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  // background image sizing
+  background: { flex: 1, width: '100%', height: '100%' },
+  // keep the container transparent so background shows through
+  container: { flex: 1, backgroundColor: 'transparent' },
   topCenter: {
     position: 'absolute',
     top: 12,
