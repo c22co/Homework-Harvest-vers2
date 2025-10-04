@@ -9,11 +9,11 @@ import { ThemedView } from '@/components/themed-view';
 import { Link } from 'expo-router';
 import { CurrencyProvider } from '@/components/CurrencyContext';
 import PlayerController from '../PlayerController';
-import SomeComponent from '@/components/SomeComponent';
 import { TodoProvider } from '@/components/TodoContext';
 import TodoList from '@/components/TodoList';
 import CompletedTasks from '@/components/CompletedTasks';
 import Pumpkin from '@/components/Pumpkin';
+import CurrencyDisplay from '@/components/CurrencyDisplay';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -33,26 +33,25 @@ export default function HomeScreen() {
   };
 
   return (
-    <CurrencyProvider>
-      <TodoProvider>
-        <PlayerController
-          pumpkins={pumpkins}
-          setPumpkins={setPumpkins}
-        />
-        <SomeComponent />
-        {showCompleted ? (
-          <CompletedTasks onBack={() => setShowCompleted(false)} />
-        ) : (
+    <>
+      {/* ...existing UI (map, player, etc.) ... */}
+      <CurrencyProvider>
+        <TodoProvider>
+          <PlayerController pumpkins={pumpkins} setPumpkins={setPumpkins} />
+          {/* render todo / completed here */}
           <TodoList
             onShowCompleted={() => setShowCompleted(true)}
             onTaskCompleted={spawnPumpkin}
           />
-        )}
-        {pumpkins.map(pumpkin => (
-          <Pumpkin key={pumpkin.id} x={pumpkin.x} y={pumpkin.y} />
-        ))}
-      </TodoProvider>
-    </CurrencyProvider>
+          {showCompleted ? (
+            <CompletedTasks onBack={() => setShowCompleted(false)} />
+          ) : null}
+
+          {/* currency display overlay (top-right) — must be inside the provider */}
+          <CurrencyDisplay />
+        </TodoProvider>
+      </CurrencyProvider>
+    </>
   );
 }
 
