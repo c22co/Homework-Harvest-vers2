@@ -1,14 +1,14 @@
-import React, { useRef, useState, useEffect } from 'react';
+import { useCurrency } from '@/components/CurrencyContext';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   Animated,
   Dimensions,
   Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useCurrency } from '@/components/CurrencyContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -17,9 +17,11 @@ type PumpkinItem = { id: string; x: number; y: number };
 export default function PlayerController({
   pumpkins,
   setPumpkins,
+  outfit = '🧑',
 }: {
   pumpkins: PumpkinItem[];
   setPumpkins: (updater: (prev: PumpkinItem[]) => PumpkinItem[]) => void;
+  outfit?: string;
 }) {
   const CHARACTER_SIZE = 40;
   const PUMPKIN_SIZE = 40;
@@ -176,7 +178,7 @@ export default function PlayerController({
             { left: animatedX as any, top: animatedY as any },
           ]}
         >
-          <Text style={styles.characterText}>🧑</Text>
+          <Text style={styles.characterText}>{outfit}</Text>
         </Animated.View>
       </View>
 

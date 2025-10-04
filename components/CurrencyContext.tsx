@@ -1,45 +1,47 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, ReactNode, useContext, useState } from 'react';
 
-type CurrencyContextType = {
+type CurrencyContextValue = {
   currency: number;
-  add_currency: (amount: number) => void;
-  remove_currency: (amount: number) => void;
+  setCurrency: React.Dispatch<React.SetStateAction<number>>;
+  add_currency: (delta: number) => void;
+  ownedOutfits: string[];
+  setOwnedOutfits: React.Dispatch<React.SetStateAction<string[]>>;
+  currentOutfit: string;
+  setCurrentOutfit: (outfit: string) => void;
+  equipOutfit: (outfit: string) => boolean;
 };
 
-const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
+const CurrencyContext = createContext<CurrencyContextValue | undefined>(undefined);
 
 export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
-  const [currency, setCurrency] = useState(0);
+  const [currency, setCurrency] = useState<number>(0);
+  const add_currency = (delta: number) => setCurrency(c => c + delta);
 
-  useEffect(() => {
-    // Load currency from storage on mount
-    AsyncStorage.getItem('currency').then(value => {
-      if (value !== null) setCurrency(Number(value));
-    });
-  }, []);
+  const [ownedOutfits, setOwnedOutfits] = useState<string[]>(['🧑']);
+  const [currentOutfit, setCurrentOutfitState] = useState<string>('🧑');
 
-  const add_currency = (amount: number) => {
-    setCurrency(prev => {
-      const newCurrency = prev + amount;
-      AsyncStorage.setItem('currency', String(newCurrency));
-      return newCurrency;
-    });
+  const setCurrentOutfit = (outfit: string) => {
+    setCurrentOutfitState(outfit);
   };
 
-  const remove_currency = (amount: number) => {
-    setCurrency(prev => {
-      const newCurrency = Math.max(0, prev - amount);
-      AsyncStorage.setItem('currency', String(newCurrency));
-      return newCurrency;
-    });
+  const equipOutfit = (outfit: string) => {
+    if (!ownedOutfits.includes(outfit)) return false;
+    setCurrentOutfit(outfit);
+    return true;
   };
 
-  return (
-    <CurrencyContext.Provider value={{ currency, add_currency, remove_currency }}>
-      {children}
-    </CurrencyContext.Provider>
-  );
+  const value: CurrencyContextValue = {
+    currency,
+    setCurrency,
+    add_currency,
+    ownedOutfits,
+    setOwnedOutfits,
+    currentOutfit,
+    setCurrentOutfit,
+    equipOutfit,
+  };
+
+  return <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>;
 };
 
 export const useCurrency = () => {
