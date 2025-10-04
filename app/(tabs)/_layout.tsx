@@ -12,3 +12,7 @@ export default function RootLayout() {
     </TodoProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+});
