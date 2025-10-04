@@ -9,6 +9,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useCurrency } from '@/components/CurrencyContext';
+import DecorTree from '@/components/DecorTree';
+import Pumpkin from '@/components/Pumpkin'; // <-- add this
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -169,17 +172,37 @@ export default function PlayerController({
     applyPosition(px, py);
   };
 
+  // Example tree positions (adjust or generate dynamically)
+  const treePositions = [
+    { x: 8, y: SCREEN_HEIGHT - 220, scale: 1.0, flip: false },
+    { x: SCREEN_WIDTH - 110, y: SCREEN_HEIGHT - 240, scale: 1.1, flip: true },
+    { x: 24, y: 40, scale: 0.8, flip: false },
+    { x: SCREEN_WIDTH - 160, y: 60, scale: 0.9, flip: true },
+  ];
+
   return (
     <View style={styles.container}>
       <View style={styles.gameArea}>
+        {/* decorative trees (render first so they are behind character) */}
+        {treePositions.map((t, i) => (
+          <DecorTree key={i} x={t.x} y={t.y} scale={t.scale} flip={t.flip} />
+        ))}
+
+        {/* existing character & pumpkins rendering */}
         <Animated.View
           style={[
             styles.character,
-            { left: animatedX as any, top: animatedY as any },
+            { left: animatedX as any, top: animatedY as any, zIndex: 5 },
           ]}
         >
           <Text style={styles.characterText}>{outfit}</Text>
         </Animated.View>
+
+        {/* keep pumpkin rendering here (pumpkins should have zIndex between trees and player or same layer) */}
+        {pumpkins.map(p => (
+          <Pumpkin key={p.id} x={p.x} y={p.y} />
+        ))}
+
       </View>
 
       <View style={styles.controlsContainer}>

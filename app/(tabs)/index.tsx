@@ -1,13 +1,19 @@
-// index.tsx
-import CompletedTasks from '@/components/CompletedTasks';
-import { useCurrency } from '@/components/CurrencyContext';
-import Pumpkin from '@/components/Pumpkin';
-import SomeComponent from '@/components/SomeComponent';
+import React from 'react';
+import { Image } from 'expo-image';
+import { StyleSheet, Dimensions } from 'react-native';
+
+import { HelloWave } from '@/components/hello-wave';
+import ParallaxScrollView from '@/components/parallax-scroll-view';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { Link } from 'expo-router';
+import { CurrencyProvider } from '@/components/CurrencyContext';
+import PlayerController from '../PlayerController';
 import { TodoProvider } from '@/components/TodoContext';
 import TodoList from '@/components/TodoList';
-import React from 'react';
-import { Dimensions, StyleSheet } from 'react-native';
-import PlayerController from '../PlayerController';
+import CompletedTasks from '@/components/CompletedTasks';
+import Pumpkin from '@/components/Pumpkin';
+import CurrencyDisplay from '@/components/CurrencyDisplay';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -25,31 +31,25 @@ export default function HomeScreen() {
   };
 
   return (
-    <TodoProvider>
-      {/* Player/character */}
-      <PlayerController
-        pumpkins={pumpkins}
-        setPumpkins={setPumpkins}
-        outfit={currentOutfit} // pass the outfit to the character
-      />
+    <>
+      {/* ...existing UI (map, player, etc.) ... */}
+      <CurrencyProvider>
+        <TodoProvider>
+          <PlayerController pumpkins={pumpkins} setPumpkins={setPumpkins} />
+          {/* render todo / completed here */}
+          <TodoList
+            onShowCompleted={() => setShowCompleted(true)}
+            onTaskCompleted={spawnPumpkin}
+          />
+          {showCompleted ? (
+            <CompletedTasks onBack={() => setShowCompleted(false)} />
+          ) : null}
 
-      {/* Other components */}
-      <SomeComponent />
-
-      {showCompleted ? (
-        <CompletedTasks onBack={() => setShowCompleted(false)} />
-      ) : (
-        <TodoList
-          onShowCompleted={() => setShowCompleted(true)}
-          onTaskCompleted={spawnPumpkin}
-        />
-      )}
-
-      {/* Pumpkins rendering */}
-      {pumpkins.map(pumpkin => (
-        <Pumpkin key={pumpkin.id} x={pumpkin.x} y={pumpkin.y} />
-      ))}
-    </TodoProvider>
+          {/* currency display overlay (top-right) — must be inside the provider */}
+          <CurrencyDisplay />
+        </TodoProvider>
+      </CurrencyProvider>
+    </>
   );
 }
 

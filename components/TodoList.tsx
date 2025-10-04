@@ -137,94 +137,177 @@ const TodoList = ({
     </View>
   );
 };
+const ORANGE_DARK = "#B86519";   // borders / headings
+const BUTTER      = "#FFE086";   // panel fill
+const BUTTER_DEEP = "#FFD871";   // button fill
+const INPUT_FILL  = "#FFF0BF";   // input fill
+const INPUT_BORDER= "#D28B2F";   // input border
 
 const styles = StyleSheet.create({
+  /* Panel: compact, fixed, top-left */
   container: {
-    position: 'absolute',
+    position: "absolute",
     top: 20,
     left: 20,
-    width: 300,
-    maxHeight: '70%',
-    backgroundColor: Platform.OS === 'web' ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.9)',
-    padding: 12,
-    borderRadius: 14,
-    // soft shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
+    width: 300,                 // compact width
+    backgroundColor: BUTTER,
+    borderWidth: 3,
+    borderColor: ORANGE_DARK,
+    borderRadius: 12,
+    padding: 10,                // inset so inner borders never touch outer
+    gap: 8,
+    shadowColor: "#000",
     shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 8,
-    zIndex: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
-    backdropFilter: 'blur(6px)', // web-only; ignored on native
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+
+  /* Header */
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 6,
   },
   title: {
-    fontWeight: '700',
-    fontSize: 18,
-    marginBottom: 10,
-    color: '#111',
-    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: "900",
+    color: ORANGE_DARK,
   },
+  toggle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: ORANGE_DARK,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: BUTTER_DEEP,
+  },
+  toggleClosed: { opacity: 0.9 },
+  toggleText: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: ORANGE_DARK,
+    lineHeight: 16,
+  },
+
+  /* Inner section (adds another inset so borders don’t “kiss”) */
+  section: {
+    marginTop: 6,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: "#FFE6A5",
+    borderWidth: 2,
+    borderColor: ORANGE_DARK,
+    gap: 10,
+  },
+
+  /* Input row */
   inputRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,                    // clear spacing between field and button
   },
   input: {
-    borderWidth: 1,
-    borderColor: 'rgba(16,24,32,0.08)',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(255,255,255,0.6)',
-    color: '#111',
-  },
-  addInput: {
     flex: 1,
+    height: 38,                 // compact field height
+    backgroundColor: INPUT_FILL,
+    borderWidth: 2,
+    borderColor: INPUT_BORDER,
+    borderRadius: 9,
+    paddingHorizontal: 10,
+    color: "#7C4710",
   },
+
+  /* Add button (compact pill) */
   addButton: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    justifyContent: 'center',
+    minWidth: 76,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    backgroundColor: BUTTER_DEEP,
+    borderWidth: 3,
+    borderColor: ORANGE_DARK,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 2,
   },
   addButtonText: {
-    color: '#fff',
-    fontWeight: '700',
+    fontWeight: "800",
+    color: ORANGE_DARK,
+    fontSize: 15,
   },
-  list: {
-    marginBottom: 8,
+
+  /* Big CTA (fits neatly within inset section) */
+  completedButton: {
+    alignSelf: "stretch",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: BUTTER_DEEP,
+    borderWidth: 3,
+    borderColor: ORANGE_DARK,
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOpacity: 0.10,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  listContent: {
-    paddingBottom: 6,
+  completedButtonText: {
+    textAlign: "center",
+    fontWeight: "900",
+    color: ORANGE_DARK,
+    fontSize: 17,
   },
+
+  /* Kept for compatibility if referenced elsewhere */
+  inputRowSpacer: { height: 4 },
+  todoRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  taskText: { flex: 1, color: "#7C4710", fontSize: 16 },
+  checkButton: { marginHorizontal: 5 },
+
   taskCard: {
-    backgroundColor: 'rgba(250,250,250,0.8)',
-    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    borderRadius: 8,
     padding: 8,
     marginBottom: 8,
-    flexDirection: 'column',
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.04)',
   },
+
   taskRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+
   taskTextWrap: {
     flex: 1,
     paddingRight: 8,
   },
-  taskText: {
-    fontSize: 14,
-    color: '#111',
+
+  editRow: {
+    flexDirection: 'column',
   },
+
+  editInput: {
+    marginBottom: 6,
+    backgroundColor: INPUT_FILL,
+  },
+
+  editButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 6,
+  },
+
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
+
   iconButton: {
     width: 36,
     height: 36,
@@ -232,36 +315,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   iconPressed: {
     backgroundColor: 'rgba(0,0,0,0.06)',
   },
+
   iconText: {
     fontSize: 16,
   },
-  editRow: {
-    flexDirection: 'column',
-  },
-  editInput: {
-    marginBottom: 6,
-    backgroundColor: 'rgba(255,255,255,0.8)',
-  },
-  editButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 6,
-  },
-  completedButton: {
-    marginTop: 6,
-    alignSelf: 'stretch',
-    backgroundColor: 'transparent',
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  completedButtonText: {
-    textAlign: 'center',
-    color: '#374151',
-    fontWeight: '600',
-  },
 });
+
 
 export default TodoList;
