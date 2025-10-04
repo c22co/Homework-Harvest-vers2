@@ -5,12 +5,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
+  Image,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import girlImg from '../assets/images/girl-front2.png';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -26,7 +28,7 @@ export default function PlayerController({
   pumpkins: PumpkinItem[];
   setPumpkins: (updater: (prev: PumpkinItem[]) => PumpkinItem[]) => void;
   outfit?: string;
-  playerRef?: React.MutableRefObject<{ x: number; y: number } | null>;
+  playerRef?: React.MutableRefObject<{ x: number; y: number; nudge: (dx: number, dy: number) => void } | null>;
   showControls?: boolean;
 }) {
   const CHARACTER_SIZE = 40;
@@ -98,7 +100,7 @@ export default function PlayerController({
     checkCollision(x, y);
   };
 
-  // rAF loop for smooth movement
+  // rAF loop for smooth keyboard movement
   const loop = (time: number) => {
     if (lastTimeRef.current == null) lastTimeRef.current = time;
     const dtMs = time - lastTimeRef.current;
@@ -177,6 +179,60 @@ export default function PlayerController({
     applyPosition(px, py);
   };
 
+  // --- TOUCH-HOLD continuous movement implementation ---
+  const touchDirRef = useRef<{ x: number; y: number } | null>(null);
+  const touchRaf = useRef<number | null>(null);
+  const touchLast = useRef<number | null>(null);
+
+  const touchLoop = (time: number) => {
+    if (touchLast.current == null) touchLast.current = time;
+    const dt = (time - touchLast.current) / 1000;
+    touchLast.current = time;
+
+    const dir = touchDirRef.current;
+    if (dir) {
+      // apply continuous (float) movement to avoid rounding-snaps on release
+      const newX = Math.min(
+        Math.max(0, positionRef.current.x + dir.x * MOVE_SPEED_PX_PER_SEC * dt),
+        SCREEN_WIDTH - CHARACTER_SIZE
+      );
+      const newY = Math.min(
+        Math.max(0, positionRef.current.y + dir.y * MOVE_SPEED_PX_PER_SEC * dt),
+        SCREEN_HEIGHT - CHARACTER_SIZE - 150
+      );
+      applyPosition(newX, newY);
+      touchRaf.current = requestAnimationFrame(touchLoop);
+    } else {
+      touchLast.current = null;
+      touchRaf.current = null;
+    }
+  };
+
+  const startTouchHold = (dx: number, dy: number) => {
+    touchDirRef.current = { x: dx, y: dy };
+    if (touchRaf.current == null) {
+      touchLast.current = null;
+      touchRaf.current = requestAnimationFrame(touchLoop);
+    }
+  };
+
+  const stopTouchHold = () => {
+    touchDirRef.current = null;
+    if (touchRaf.current != null) {
+      cancelAnimationFrame(touchRaf.current);
+      touchRaf.current = null;
+    }
+    touchLast.current = null;
+  };
+
+  useEffect(() => {
+    return () => {
+      // cleanup touch raf on unmount
+      if (touchRaf.current != null) cancelAnimationFrame(touchRaf.current);
+      if (rafId.current != null) cancelAnimationFrame(rafId.current);
+    };
+  }, []);
+
   // Example tree positions (adjust or generate dynamically)
   const treePositions = [
     { x: 8, y: SCREEN_HEIGHT - 220, scale: 1.0, flip: false },
@@ -185,44 +241,95 @@ export default function PlayerController({
     { x: SCREEN_WIDTH - 160, y: 60, scale: 0.9, flip: true },
   ];
 
+  // expose current position + nudge API to parent via playerRef
+  useEffect(() => {
+    if (!playerRef) return;
+    playerRef.current = {
+      x: positionRef.current.x,
+      y: positionRef.current.y,
+      nudge: (dx: number, dy: number) => {
+        const px = Math.min(Math.max(0, positionRef.current.x + dx), SCREEN_WIDTH - CHARACTER_SIZE);
+        const py = Math.min(Math.max(0, positionRef.current.y + dy), SCREEN_HEIGHT - CHARACTER_SIZE - 150);
+        applyPosition(px, py);
+      },
+    };
+    // keep the ref in sync each frame via a small interval/hook
+    const iv = setInterval(() => {
+      if (playerRef.current) {
+        playerRef.current.x = positionRef.current.x;
+        playerRef.current.y = positionRef.current.y;
+      }
+    }, 50);
+    return () => {
+      clearInterval(iv);
+      if (playerRef) playerRef.current = null;
+    };
+  }, [playerRef]);
+
   return (
-    <View style={styles.container}>
-      <View style={styles.gameArea}>
-        {/* decorative trees (render first so they are behind character) */}
+    <View style={styles.container} pointerEvents="box-none">
+      <View style={styles.gameArea} pointerEvents="box-none">
+        {/* decorative trees */}
         {treePositions.map((t, i) => (
           <DecorTree key={i} x={t.x} y={t.y} scale={t.scale} flip={t.flip} />
         ))}
 
-        {/* existing character & pumpkins rendering */}
         <Animated.View
           style={[
             styles.character,
             { left: animatedX as any, top: animatedY as any, zIndex: 5 },
           ]}
+          pointerEvents="none"
         >
-          <Text style={styles.characterText}>{displayOutfit}</Text>
+          {/* always use the character image asset for the player sprite */}
+          <Image source={girlImg} style={styles.characterImage} resizeMode="contain" />
         </Animated.View>
 
-        {/* keep pumpkin rendering here (pumpkins should have zIndex between trees and player or same layer) */}
         {pumpkins.map(p => (
           <Pumpkin key={p.id} x={p.x} y={p.y} />
         ))}
-
       </View>
 
-      {/* render on-screen controls only if allowed */}
       {showControls && (
-        <View style={styles.controlsContainer}>
-          <TouchableOpacity style={styles.arrowButton} onPress={() => applyPosition(positionRef.current.x - 20, positionRef.current.y)}>
+        <View style={styles.controlsContainer} pointerEvents="box-none">
+          <TouchableOpacity
+            style={styles.arrowButton}
+            onPressIn={() => {
+              // start continuous hold only (no integer nudge)
+              startTouchHold(-1, 0);
+            }}
+            onPressOut={() => stopTouchHold()}
+          >
             <Text>←</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.arrowButton} onPress={() => applyPosition(positionRef.current.x + 20, positionRef.current.y)}>
+
+          <TouchableOpacity
+            style={styles.arrowButton}
+            onPressIn={() => {
+              startTouchHold(1, 0);
+            }}
+            onPressOut={() => stopTouchHold()}
+          >
             <Text>→</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.arrowButton} onPress={() => applyPosition(positionRef.current.x, positionRef.current.y - 20)}>
+
+          <TouchableOpacity
+            style={styles.arrowButton}
+            onPressIn={() => {
+              startTouchHold(0, -1);
+            }}
+            onPressOut={() => stopTouchHold()}
+          >
             <Text>↑</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.arrowButton} onPress={() => applyPosition(positionRef.current.x, positionRef.current.y + 20)}>
+
+          <TouchableOpacity
+            style={styles.arrowButton}
+            onPressIn={() => {
+              startTouchHold(0, 1);
+            }}
+            onPressOut={() => stopTouchHold()}
+          >
             <Text>↓</Text>
           </TouchableOpacity>
         </View>
@@ -232,12 +339,28 @@ export default function PlayerController({
 }
 
 const styles = StyleSheet.create({
-  // make transparent so global ImageBackground shows through
   container: { flex: 1, backgroundColor: 'transparent' },
   gameArea: { flex: 1, position: 'relative' },
   character: { position: 'absolute', width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   characterText: { fontSize: 40 },
-  // ensure controls sit above the UI overlay and other layers
-  controlsContainer: { position: 'absolute', bottom: 20, left: 20, zIndex: 300, elevation: 30 },
-  arrowButton: { width: 45, height: 45, backgroundColor: 'rgba(255,255,255,0.9)', justifyContent: 'center', alignItems: 'center', margin: 5, borderRadius: 22.5 },
+  characterImage: { width: 40, height: 40 }, // tune size
+  // place controls above almost everything
+  controlsContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    zIndex: 9999,
+    elevation: 9999,
+    // allow the touchables to accept events
+    pointerEvents: 'auto',
+  },
+  arrowButton: {
+    width: 45,
+    height: 45,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: 5,
+    borderRadius: 22.5,
+  },
 });

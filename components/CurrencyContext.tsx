@@ -17,7 +17,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   const [currency, setCurrency] = useState<number>(0);
   const add_currency = (delta: number) => setCurrency(c => c + delta);
 
-  const [ownedOutfits, setOwnedOutfits] = useState<string[]>(['🧑']);
+  const [ownedOutfits, setOwnedOutfits] = useState<string[]>(['🧑']); // default outfit owned
   const [currentOutfit, setCurrentOutfitState] = useState<string>('🧑');
 
   const setCurrentOutfit = (outfit: string) => {
