@@ -13,27 +13,12 @@ export default function DecorTree({
   scale?: number;
   flip?: boolean;
 }) {
-  const size = 96 * scale; // base size, adjust as needed
-
+  const size = 96 * scale;
   return (
-    <View
-      pointerEvents="none"
-      style={[
-        styles.tree,
-        {
-          left: x,
-          top: y,
-          width: size,
-          height: size,
-        },
-      ]}
-    >
+    <View pointerEvents="none" style={[styles.tree, { left: x, top: y, width: size, height: size }]}>
       <Image
         source={require('@/assets/images/Tree.png')}
-        style={[
-          styles.image,
-          { width: size, height: size, transform: [{ scaleX: flip ? -1 : 1 }] },
-        ]}
+        style={[styles.image, { width: size, height: size, transform: [{ scaleX: flip ? -1 : 1 }] }]}
       />
     </View>
   );
@@ -42,7 +27,7 @@ export default function DecorTree({
 const styles = StyleSheet.create({
   tree: {
     position: 'absolute',
-    zIndex: 1, // behind player (player should have higher zIndex)
+    zIndex: 1,
   },
   image: {
     resizeMode: 'contain',

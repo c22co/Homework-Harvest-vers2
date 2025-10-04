@@ -267,6 +267,62 @@ const styles = StyleSheet.create({
   todoRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   taskText: { flex: 1, color: "#7C4710", fontSize: 16 },
   checkButton: { marginHorizontal: 5 },
+
+  taskCard: {
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
+  },
+
+  taskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  taskTextWrap: {
+    flex: 1,
+    paddingRight: 8,
+  },
+
+  editRow: {
+    flexDirection: 'column',
+  },
+
+  editInput: {
+    marginBottom: 6,
+    backgroundColor: INPUT_FILL,
+  },
+
+  editButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 6,
+  },
+
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+
+  iconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  iconPressed: {
+    backgroundColor: 'rgba(0,0,0,0.06)',
+  },
+
+  iconText: {
+    fontSize: 16,
+  },
 });
 
 

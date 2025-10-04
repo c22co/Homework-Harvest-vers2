@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useCurrency } from '@/components/CurrencyContext';
 import DecorTree from '@/components/DecorTree';
+import Pumpkin from '@/components/Pumpkin'; // <-- add this
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 

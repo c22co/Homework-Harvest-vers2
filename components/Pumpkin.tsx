@@ -5,10 +5,7 @@ import { View, StyleSheet } from 'react-native';
 export default function Pumpkin({ x, y }: { x: number; y: number }) {
   return (
     <View style={[styles.pumpkin, { left: x, top: y }]}>
-      <Image
-        source={require('@/assets/images/Pumpkin.png')}
-        style={{ width: 40, height: 40 }}
-      />
+      <Image source={require('@/assets/images/Pumpkin.png')} style={{ width: 40, height: 40 }} />
     </View>
   );
 }
