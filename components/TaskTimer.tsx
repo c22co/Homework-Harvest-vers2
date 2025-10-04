@@ -1,15 +1,15 @@
+import { useTodo } from "@/components/TodoContext";
+import { Audio } from "expo-av";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  useWindowDimensions,
-  Vibration,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useWindowDimensions,
+    Vibration,
+    View,
 } from "react-native";
-import { Audio } from "expo-av";
-import { useTodo } from "@/components/TodoContext";
 
 /** Theme tokens */
 const ORANGE_DARK = "#B86519";
@@ -190,8 +190,6 @@ export default function TaskTimer({ initialTaskName = "" }: { initialTaskName?: 
 /* Styles */
 const styles = StyleSheet.create({
   container: {
-    position: "absolute",
-    bottom: 16,
     backgroundColor: BUTTER,
     borderWidth: 3,
     borderColor: ORANGE_DARK,

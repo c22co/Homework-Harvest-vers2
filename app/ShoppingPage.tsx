@@ -15,14 +15,11 @@ interface ShoppingPageProps {
   onOutfitChange?: (outfit: string) => void; // optional callback
 }
 
+// Updated outfit IDs to match PlayerController costumeImages
 const OUTFITS = [
-  { id: '1', name: 'Wizard', price: 50, emoji: '🧙' },
-  { id: '2', name: 'Ninja', price: 75, emoji: '🥷' },
-  { id: '3', name: 'Knight', price: 100, emoji: '🛡️' },
-  { id: '4', name: 'Chef', price: 40, emoji: '👨‍🍳' },
-  { id: '5', name: 'Detective', price: 60, emoji: '🕵️' },
-  { id: '6', name: 'Fairy', price: 80, emoji: '🧚' },
-  { id: '7', name: 'Astronaut', price: 120, emoji: '👨‍🚀' },
+  { id: 'wizard', name: 'Wizard', price: 70, emoji: '🧙' },
+  { id: 'cat', name: 'Cat', price: 100, emoji: '🥷' },
+  { id: 'alien', name: 'Alien', price: 50, emoji: '🛡️' },
 ];
 
 export default function ShoppingPage({
@@ -31,7 +28,6 @@ export default function ShoppingPage({
 }: ShoppingPageProps) {
   const {
     currency,
-    setCurrency,
     add_currency,
     ownedOutfits,
     setOwnedOutfits,
@@ -39,8 +35,8 @@ export default function ShoppingPage({
     equipOutfit,
   } = useCurrency();
 
-  const handlePurchase = (outfit: string, price: number) => {
-    if (ownedOutfits.includes(outfit)) {
+  const handlePurchase = (outfitId: string, price: number) => {
+    if (ownedOutfits.includes(outfitId)) {
       Alert.alert('Already Owned', 'You already own this outfit.');
       return;
     }
@@ -49,27 +45,22 @@ export default function ShoppingPage({
       return;
     }
 
-    if (typeof add_currency === 'function') {
-      add_currency(-price);
-    } else if (typeof setCurrency === 'function') {
-      setCurrency((prev: number) => prev - price);
-    }
-
-    setOwnedOutfits(prev => [...prev, outfit]);
+    add_currency(-price);
+    setOwnedOutfits(prev => [...prev, outfitId]);
   };
 
-  const handleEquip = (outfit: string) => {
-    if (!ownedOutfits.includes(outfit)) {
+  const handleEquip = (outfitId: string) => {
+    if (!ownedOutfits.includes(outfitId)) {
       Alert.alert('Not Owned', 'You need to buy this outfit first.');
       return;
     }
-    const success = equipOutfit(outfit);
-    if (success && typeof onOutfitChange === 'function') onOutfitChange(outfit);
+    const success = equipOutfit(outfitId);
+    if (success && typeof onOutfitChange === 'function') onOutfitChange(outfitId);
   };
 
   const renderOutfit = ({ item }: { item: typeof OUTFITS[0] }) => {
-    const owned = ownedOutfits.includes(item.emoji);
-    const equipped = currentOutfit === item.emoji;
+    const owned = ownedOutfits.includes(item.id);
+    const equipped = currentOutfit === item.id;
 
     return (
       <View style={styles.outfitContainer}>
@@ -82,14 +73,14 @@ export default function ShoppingPage({
         ) : owned ? (
           <TouchableOpacity
             style={[styles.button, { backgroundColor: '#34C759' }]}
-            onPress={() => handleEquip(item.emoji)}
+            onPress={() => handleEquip(item.id)}
           >
             <Text style={styles.buttonText}>Equip</Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
             style={styles.button}
-            onPress={() => handlePurchase(item.emoji, item.price)}
+            onPress={() => handlePurchase(item.id, item.price)}
           >
             <Text style={styles.buttonText}>Buy</Text>
           </TouchableOpacity>
@@ -120,7 +111,6 @@ export default function ShoppingPage({
 }
 
 const styles = StyleSheet.create({
-  // transparent so the background image shows through
   container: { flex: 1, backgroundColor: 'transparent' },
   topBar: {
     flexDirection: 'row',

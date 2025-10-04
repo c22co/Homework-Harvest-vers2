@@ -12,21 +12,23 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import girlImg from '../assets/images/girl-front2.png';
+
+// Use require() for images with spaces in filenames
+const girlImg = require('../assets/images/girl-front2.png');
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 type PumpkinItem = { id: string; x: number; y: number };
 
 export default function PlayerController({
-  pumpkins,
-  setPumpkins,
+  pumpkins = [], // ← Add default empty array
+  setPumpkins = () => {}, // ← Add default no-op
   outfit = '🧑',
   playerRef,
   showControls = true,
 }: {
-  pumpkins: PumpkinItem[];
-  setPumpkins: (updater: (prev: PumpkinItem[]) => PumpkinItem[]) => void;
+  pumpkins?: PumpkinItem[]; // ← Make optional with ?
+  setPumpkins?: (updater: (prev: PumpkinItem[]) => PumpkinItem[]) => void; // ← Make optional with ?
   outfit?: string;
   playerRef?: React.MutableRefObject<{ x: number; y: number; nudge: (dx: number, dy: number) => void } | null>;
   showControls?: boolean;
@@ -50,10 +52,10 @@ export default function PlayerController({
   const { add_currency, currentOutfit } = useCurrency();
   const displayOutfit = currentOutfit ?? outfit;
 
-  // pumpkins ref to avoid stale closure
-  const pumpkinsRef = useRef<PumpkinItem[]>(pumpkins);
+  // pumpkins ref to avoid stale closure - SAFELY handle undefined
+  const pumpkinsRef = useRef<PumpkinItem[]>(pumpkins || []);
   useEffect(() => {
-    pumpkinsRef.current = pumpkins;
+    pumpkinsRef.current = pumpkins || [];
   }, [pumpkins]);
 
   // key tracking
@@ -100,7 +102,7 @@ export default function PlayerController({
     checkCollision(x, y);
   };
 
-  // rAF loop for smooth keyboard movement
+  // rAF loop for smooth movement
   const loop = (time: number) => {
     if (lastTimeRef.current == null) lastTimeRef.current = time;
     const dtMs = time - lastTimeRef.current;
@@ -125,7 +127,7 @@ export default function PlayerController({
       moved = true;
     }
     if (keysPressed.current['s'] || keysPressed.current['arrowdown']) {
-      newY = Math.min(SCREEN_HEIGHT - CHARACTER_SIZE - 150, newY + delta);
+      newY = Math.min(SCREEN_HEIGHT - CHARACTER_SIZE, newY + delta);
       moved = true;
     }
 
@@ -175,65 +177,11 @@ export default function PlayerController({
   // on-screen buttons must use positionRef
   const nudge = (dx: number, dy: number) => {
     const px = Math.min(Math.max(0, positionRef.current.x + dx), SCREEN_WIDTH - CHARACTER_SIZE);
-    const py = Math.min(Math.max(0, positionRef.current.y + dy), SCREEN_HEIGHT - CHARACTER_SIZE - 150);
+    const py = Math.min(Math.max(0, positionRef.current.y + dy), SCREEN_HEIGHT - CHARACTER_SIZE);
     applyPosition(px, py);
   };
 
-  // --- TOUCH-HOLD continuous movement implementation ---
-  const touchDirRef = useRef<{ x: number; y: number } | null>(null);
-  const touchRaf = useRef<number | null>(null);
-  const touchLast = useRef<number | null>(null);
-
-  const touchLoop = (time: number) => {
-    if (touchLast.current == null) touchLast.current = time;
-    const dt = (time - touchLast.current) / 1000;
-    touchLast.current = time;
-
-    const dir = touchDirRef.current;
-    if (dir) {
-      // apply continuous (float) movement to avoid rounding-snaps on release
-      const newX = Math.min(
-        Math.max(0, positionRef.current.x + dir.x * MOVE_SPEED_PX_PER_SEC * dt),
-        SCREEN_WIDTH - CHARACTER_SIZE
-      );
-      const newY = Math.min(
-        Math.max(0, positionRef.current.y + dir.y * MOVE_SPEED_PX_PER_SEC * dt),
-        SCREEN_HEIGHT - CHARACTER_SIZE - 150
-      );
-      applyPosition(newX, newY);
-      touchRaf.current = requestAnimationFrame(touchLoop);
-    } else {
-      touchLast.current = null;
-      touchRaf.current = null;
-    }
-  };
-
-  const startTouchHold = (dx: number, dy: number) => {
-    touchDirRef.current = { x: dx, y: dy };
-    if (touchRaf.current == null) {
-      touchLast.current = null;
-      touchRaf.current = requestAnimationFrame(touchLoop);
-    }
-  };
-
-  const stopTouchHold = () => {
-    touchDirRef.current = null;
-    if (touchRaf.current != null) {
-      cancelAnimationFrame(touchRaf.current);
-      touchRaf.current = null;
-    }
-    touchLast.current = null;
-  };
-
-  useEffect(() => {
-    return () => {
-      // cleanup touch raf on unmount
-      if (touchRaf.current != null) cancelAnimationFrame(touchRaf.current);
-      if (rafId.current != null) cancelAnimationFrame(rafId.current);
-    };
-  }, []);
-
-  // Example tree positions (adjust or generate dynamically)
+  // Static tree positions
   const treePositions = [
     { x: 8, y: SCREEN_HEIGHT - 220, scale: 1.0, flip: false },
     { x: SCREEN_WIDTH - 110, y: SCREEN_HEIGHT - 240, scale: 1.1, flip: true },
@@ -249,7 +197,7 @@ export default function PlayerController({
       y: positionRef.current.y,
       nudge: (dx: number, dy: number) => {
         const px = Math.min(Math.max(0, positionRef.current.x + dx), SCREEN_WIDTH - CHARACTER_SIZE);
-        const py = Math.min(Math.max(0, positionRef.current.y + dy), SCREEN_HEIGHT - CHARACTER_SIZE - 150);
+        const py = Math.min(Math.max(0, positionRef.current.y + dy), SCREEN_HEIGHT - CHARACTER_SIZE);
         applyPosition(px, py);
       },
     };
@@ -269,8 +217,8 @@ export default function PlayerController({
   return (
     <View style={styles.container} pointerEvents="box-none">
       <View style={styles.gameArea} pointerEvents="box-none">
-        {/* decorative trees */}
-        {treePositions.map((t, i) => (
+        {/* SAFE mapping with optional chaining */}
+        {treePositions?.map?.((t, i) => (
           <DecorTree key={i} x={t.x} y={t.y} scale={t.scale} flip={t.flip} />
         ))}
 
@@ -281,55 +229,27 @@ export default function PlayerController({
           ]}
           pointerEvents="none"
         >
-          {/* always use the character image asset for the player sprite */}
           <Image source={girlImg} style={styles.characterImage} resizeMode="contain" />
         </Animated.View>
 
-        {pumpkins.map(p => (
+        {/* SAFE mapping with optional chaining */}
+        {pumpkins?.map?.((p) => (
           <Pumpkin key={p.id} x={p.x} y={p.y} />
         ))}
       </View>
 
       {showControls && (
         <View style={styles.controlsContainer} pointerEvents="box-none">
-          <TouchableOpacity
-            style={styles.arrowButton}
-            onPressIn={() => {
-              // start continuous hold only (no integer nudge)
-              startTouchHold(-1, 0);
-            }}
-            onPressOut={() => stopTouchHold()}
-          >
+          <TouchableOpacity style={styles.arrowButton} onPress={() => nudge(-20, 0)}>
             <Text>←</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.arrowButton}
-            onPressIn={() => {
-              startTouchHold(1, 0);
-            }}
-            onPressOut={() => stopTouchHold()}
-          >
+          <TouchableOpacity style={styles.arrowButton} onPress={() => nudge(20, 0)}>
             <Text>→</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.arrowButton}
-            onPressIn={() => {
-              startTouchHold(0, -1);
-            }}
-            onPressOut={() => stopTouchHold()}
-          >
+          <TouchableOpacity style={styles.arrowButton} onPress={() => nudge(0, -20)}>
             <Text>↑</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.arrowButton}
-            onPressIn={() => {
-              startTouchHold(0, 1);
-            }}
-            onPressOut={() => stopTouchHold()}
-          >
+          <TouchableOpacity style={styles.arrowButton} onPress={() => nudge(0, 20)}>
             <Text>↓</Text>
           </TouchableOpacity>
         </View>

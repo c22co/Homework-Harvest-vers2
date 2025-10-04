@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Image } from 'expo-image';
+import React, { useState } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useCurrency } from './CurrencyContext';
 
 export default function CurrencyDisplay() {
@@ -37,9 +37,6 @@ export default function CurrencyDisplay() {
 
 const styles = StyleSheet.create({
   wrapper: {
-    position: 'absolute',
-    top: 18,
-    right: 18,
     zIndex: 50,
     alignItems: 'flex-end',
   },

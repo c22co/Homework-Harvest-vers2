@@ -1,15 +1,15 @@
 import { useTodo } from '@/components/TodoContext';
 import React, { useState } from 'react';
 import {
-  Button,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useWindowDimensions,
-  View
+    Button,
+    FlatList,
+    Pressable,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useWindowDimensions,
+    View
 } from 'react-native';
 
 // removed top-level hook call that was here (calling useTodo at module scope was causing the error)
@@ -152,7 +152,7 @@ const TodoList = ({
 
       <View style={styles.inputRow}>
         <TextInput
-          style={[styles.input, styles.addInput]}
+          style={styles.input}
           placeholder="Add a task..."
           value={newTask}
           onChangeText={setNewTask}
@@ -204,9 +204,6 @@ const PANEL_HEIGHT = 240;        // target height for both panels
 const styles = StyleSheet.create({
   /* Panel: compact, fixed, top-left */
   container: {
-    position: "absolute",
-    top: 20,
-    left: 20,
     width: PANEL_WIDTH,          // overridden responsively at render
     backgroundColor: BUTTER,     // opaque panel background
     borderWidth: 3,
@@ -223,7 +220,11 @@ const styles = StyleSheet.create({
   },
 
   list: { flex: 1 },
-  listContent: { paddingBottom: 8 },
+  listContent: {
+    paddingTop: 4,
+    paddingBottom: 8,
+    gap: 6,
+  },
 
   /* Header */
   headerRow: {
@@ -286,14 +287,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: ORANGE_DARK,
     fontSize: 15,
-  },
-
-  /* List spacing */
-  list: {},
-  listContent: {
-    paddingTop: 4,
-    paddingBottom: 6,
-    gap: 6,
   },
 
   /* Task cards — now OPAQUE */

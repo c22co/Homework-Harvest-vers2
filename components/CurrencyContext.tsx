@@ -1,53 +1,51 @@
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+// CurrencyContext.tsx
+import React, { createContext, useContext, useState } from 'react';
 
-type CurrencyContextValue = {
+interface CurrencyContextType {
   currency: number;
-  setCurrency: React.Dispatch<React.SetStateAction<number>>;
-  add_currency: (delta: number) => void;
+  setCurrency: (val: number | ((prev: number) => number)) => void;
+  add_currency: (val: number) => void;
   ownedOutfits: string[];
-  setOwnedOutfits: React.Dispatch<React.SetStateAction<string[]>>;
+  setOwnedOutfits: (val: string[] | ((prev: string[]) => string[])) => void;
   currentOutfit: string;
-  setCurrentOutfit: (outfit: string) => void;
   equipOutfit: (outfit: string) => boolean;
-};
+}
 
-const CurrencyContext = createContext<CurrencyContextValue | undefined>(undefined);
+const CurrencyContext = createContext<CurrencyContextType>({} as CurrencyContextType);
 
-export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
-  const [currency, setCurrency] = useState<number>(0);
-  const add_currency = (delta: number) => setCurrency(c => c + delta);
+export const CurrencyProvider = ({ children }: { children: React.ReactNode }) => {
+  const [currency, setCurrency] = useState(200); // starting coins
+  const [ownedOutfits, setOwnedOutfits] = useState<string[]>(['default']); // start with default outfit
+  const [currentOutfit, setCurrentOutfit] = useState<string>('default');
 
-  const [ownedOutfits, setOwnedOutfits] = useState<string[]>(['🧑']); // default outfit owned
-  const [currentOutfit, setCurrentOutfitState] = useState<string>('🧑');
-
-  const setCurrentOutfit = (outfit: string) => {
-    setCurrentOutfitState(outfit);
+  // Add/subtract coins
+  const add_currency = (val: number) => {
+    setCurrency(prev => prev + val);
   };
 
+  // Equip an outfit if owned
   const equipOutfit = (outfit: string) => {
     if (!ownedOutfits.includes(outfit)) return false;
     setCurrentOutfit(outfit);
     return true;
   };
 
-  const value: CurrencyContextValue = {
-    currency,
-    setCurrency,
-    add_currency,
-    ownedOutfits,
-    setOwnedOutfits,
-    currentOutfit,
-    setCurrentOutfit,
-    equipOutfit,
-  };
-
-  return <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>;
+  return (
+    <CurrencyContext.Provider
+      value={{
+        currency,
+        setCurrency,
+        add_currency,
+        ownedOutfits,
+        setOwnedOutfits,
+        currentOutfit,
+        equipOutfit,
+      }}
+    >
+      {children}
+    </CurrencyContext.Provider>
+  );
 };
 
-export const useCurrency = () => {
-  const context = useContext(CurrencyContext);
-  if (!context) {
-    throw new Error('useCurrency must be used within a CurrencyProvider');
-  }
-  return context;
-};
+// Hook for components
+export const useCurrency = () => useContext(CurrencyContext);
