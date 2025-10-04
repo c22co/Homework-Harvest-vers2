@@ -20,10 +20,14 @@ export default function PlayerController({
   pumpkins,
   setPumpkins,
   outfit = '🧑',
+  playerRef,
+  showControls = true,
 }: {
   pumpkins: PumpkinItem[];
   setPumpkins: (updater: (prev: PumpkinItem[]) => PumpkinItem[]) => void;
   outfit?: string;
+  playerRef?: React.MutableRefObject<{ x: number; y: number } | null>;
+  showControls?: boolean;
 }) {
   const CHARACTER_SIZE = 40;
   const PUMPKIN_SIZE = 40;
@@ -206,20 +210,23 @@ export default function PlayerController({
 
       </View>
 
-      <View style={styles.controlsContainer}>
-        <TouchableOpacity style={styles.arrowButton} onPress={() => nudge(-20, 0)}>
-          <Text>←</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.arrowButton} onPress={() => nudge(20, 0)}>
-          <Text>→</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.arrowButton} onPress={() => nudge(0, -20)}>
-          <Text>↑</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.arrowButton} onPress={() => nudge(0, 20)}>
-          <Text>↓</Text>
-        </TouchableOpacity>
-      </View>
+      {/* render on-screen controls only if allowed */}
+      {showControls && (
+        <View style={styles.controlsContainer}>
+          <TouchableOpacity style={styles.arrowButton} onPress={() => applyPosition(positionRef.current.x - 20, positionRef.current.y)}>
+            <Text>←</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.arrowButton} onPress={() => applyPosition(positionRef.current.x + 20, positionRef.current.y)}>
+            <Text>→</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.arrowButton} onPress={() => applyPosition(positionRef.current.x, positionRef.current.y - 20)}>
+            <Text>↑</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.arrowButton} onPress={() => applyPosition(positionRef.current.x, positionRef.current.y + 20)}>
+            <Text>↓</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
