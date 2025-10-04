@@ -1,17 +1,16 @@
-import { useCurrency } from '@/components/CurrencyContext';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
   Animated,
   Dimensions,
   Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
 } from 'react-native';
 import { useCurrency } from '@/components/CurrencyContext';
 import DecorTree from '@/components/DecorTree';
-import Pumpkin from '@/components/Pumpkin'; // <-- add this
+import Pumpkin from '@/components/Pumpkin';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
