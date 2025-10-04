@@ -142,6 +142,8 @@ const BUTTER      = "#FFE086";   // panel fill
 const BUTTER_DEEP = "#FFD871";   // button fill
 const INPUT_FILL  = "#FFF0BF";   // input fill
 const INPUT_BORDER= "#D28B2F";   // input border
+const PANEL_WIDTH = 360; // pick the width you want for BOTH panels
+
 
 const styles = StyleSheet.create({
   /* Panel: compact, fixed, top-left */
