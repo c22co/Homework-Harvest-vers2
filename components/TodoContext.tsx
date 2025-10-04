@@ -12,6 +12,7 @@ type TodoContextType = {
   addTodo: (text: string, deadline?: string) => void;
   editTodo: (id: string, newText: string, newDeadline?: string) => void;
   completeTodo: (id: string) => void;
+  deleteTodo: (id: string) => void; // ✅ NEW
 };
 
 const TodoContext = createContext<TodoContextType | undefined>(undefined);
@@ -21,38 +22,40 @@ export const TodoProvider = ({ children }: { children: ReactNode }) => {
 
   const addTodo = (text: string, deadline?: string) => {
     setTodos(prev => [
-      ...prev,
       { id: Date.now().toString(), text, deadline, completed: false },
+      ...prev,
     ]);
   };
 
   const editTodo = (id: string, newText: string, newDeadline?: string) => {
     setTodos(prev =>
       prev.map(todo =>
-        todo.id === id
-          ? { ...todo, text: newText, deadline: newDeadline }
-          : todo
+        todo.id === id ? { ...todo, text: newText, deadline: newDeadline } : todo
       )
     );
   };
 
   const completeTodo = (id: string) => {
     setTodos(prev =>
-      prev.map(todo =>
-        todo.id === id ? { ...todo, completed: true } : todo
-      )
+      prev.map(todo => (todo.id === id ? { ...todo, completed: true } : todo))
     );
   };
 
+  const deleteTodo = (id: string) => {             // ✅ NEW
+    setTodos(prev => prev.filter(todo => todo.id !== id));
+  };
+
   return (
-    <TodoContext.Provider value={{ todos, addTodo, editTodo, completeTodo }}>
+    <TodoContext.Provider
+      value={{ todos, addTodo, editTodo, completeTodo, deleteTodo }} // ✅ expose it
+    >
       {children}
     </TodoContext.Provider>
   );
 };
 
 export const useTodo = () => {
-  const context = useContext(TodoContext);
-  if (!context) throw new Error('useTodo must be used within a TodoProvider');
-  return context;
+  const ctx = useContext(TodoContext);
+  if (!ctx) throw new Error('useTodo must be used within a TodoProvider');
+  return ctx;
 };
