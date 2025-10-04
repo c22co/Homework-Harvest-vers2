@@ -1,5 +1,4 @@
 import { useTodo } from "@/components/TodoContext";
-import { Audio } from "expo-av";
 import React, { useEffect, useRef, useState } from "react";
 import {
     StyleSheet,
@@ -24,9 +23,6 @@ const PANEL_HEIGHT = 240;
 const MIN_MIN = 2;
 const MAX_MIN = 120;
 
-/** Adjust this path if your file lives elsewhere */
-const BEEP = require("../assets/images/Sounds/beep.mp3");
-
 export default function TaskTimer({ initialTaskName = "" }: { initialTaskName?: string }) {
   const EDGE = 12;
   const { width: screenWidth } = useWindowDimensions();
@@ -41,12 +37,6 @@ export default function TaskTimer({ initialTaskName = "" }: { initialTaskName?: 
   const running = secondsLeft !== null;
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const soundRef = useRef<Audio.Sound | null>(null);
-
-  // allow audio in iOS silent mode
-  useEffect(() => {
-    Audio.setAudioModeAsync({ playsInSilentModeIOS: true }).catch(() => {});
-  }, []);
 
   // when a task is linked from the list: show panel & fill the name if not running
   useEffect(() => {
@@ -67,7 +57,7 @@ export default function TaskTimer({ initialTaskName = "" }: { initialTaskName?: 
         if (prev <= 1) {
           if (intervalRef.current) clearInterval(intervalRef.current);
           intervalRef.current = null;
-          playBeep().catch(() => Vibration.vibrate(400));
+          Vibration.vibrate(400); // Simple vibration notification
           setPanelVisible(false); // auto hide at 00:00
           return 0;
         }
@@ -80,29 +70,6 @@ export default function TaskTimer({ initialTaskName = "" }: { initialTaskName?: 
       intervalRef.current = null;
     };
   }, [running]);
-
-  const playBeep = async () => {
-    try {
-      if (soundRef.current) {
-        await soundRef.current.unloadAsync().catch(() => {});
-        soundRef.current = null;
-      }
-      const { sound } = await Audio.Sound.createAsync(BEEP, {
-        volume: 1.0,
-        shouldPlay: true,
-      });
-      soundRef.current = sound;
-      sound.setOnPlaybackStatusUpdate((status: any) => {
-        if (status?.didJustFinish) {
-          sound.unloadAsync().catch(() => {});
-          soundRef.current = null;
-        }
-      });
-    } catch (e) {
-      // fall back handled by caller (vibrate)
-      throw e;
-    }
-  };
 
   const stepMinutes = (delta: number) =>
     setMins(m => Math.max(MIN_MIN, Math.min(MAX_MIN, m + delta)));
