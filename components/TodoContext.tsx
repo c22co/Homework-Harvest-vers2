@@ -13,6 +13,11 @@ type TodoContextType = {
   editTodo: (id: string, newText: string, newDeadline?: string) => void;
   completeTodo: (id: string) => void;
   deleteTodo: (id: string) => void; // ✅ NEW
+// + ADD in type TodoContextType
+timerTaskName: string | null;
+setTimerTaskName: (name: string | null) => void;
+
+
 };
 
 const TodoContext = createContext<TodoContextType | undefined>(undefined);
@@ -45,9 +50,13 @@ export const TodoProvider = ({ children }: { children: ReactNode }) => {
     setTodos(prev => prev.filter(todo => todo.id !== id));
   };
 
+  // + ADD inside TodoProvider
+const [timerTaskName, setTimerTaskName] = useState<string | null>(null);
+
+
   return (
     <TodoContext.Provider
-      value={{ todos, addTodo, editTodo, completeTodo, deleteTodo }} // ✅ expose it
+      value={{ todos, addTodo, editTodo, completeTodo, deleteTodo, timerTaskName, setTimerTaskName }} // ✅ expose it
     >
       {children}
     </TodoContext.Provider>

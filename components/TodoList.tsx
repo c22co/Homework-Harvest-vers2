@@ -1,17 +1,18 @@
+import { useTodo } from '@/components/TodoContext';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
   Button,
-  TouchableOpacity,
-  StyleSheet,
   FlatList,
   Pressable,
-  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
   useWindowDimensions,
+  View
 } from 'react-native';
-import { useTodo } from './TodoContext';
+
+// removed top-level hook call that was here (calling useTodo at module scope was causing the error)
 
 const TodoList = ({
   onShowCompleted,   // kept for compatibility (not used anymore)
@@ -22,7 +23,7 @@ const TodoList = ({
 }) => {
   // Grab everything from context, but treat deleteTodo as optional
   const todoApi = useTodo();
-  const { todos, addTodo, editTodo, completeTodo } = todoApi;
+  const { todos, addTodo, editTodo, completeTodo, setTimerTaskName } = todoApi;
   const deleteTodo =
     (todoApi as any).deleteTodo as undefined | ((id: string) => void);
 
@@ -81,6 +82,15 @@ const TodoList = ({
 
             <View style={styles.actions}>
               {/* Complete (only does something if not already completed) */}
+              {/* Link this task to the timer */}
+<Pressable
+  style={({ pressed }) => [styles.iconButton, pressed && styles.iconPressed]}
+  onPress={() => setTimerTaskName(item.text)}
+  accessibilityLabel="Link to timer"
+>
+  <Text style={styles.iconText}>⏱</Text>
+</Pressable>
+
               <Pressable
                 style={({ pressed }) => [
                   styles.iconButton,
@@ -188,12 +198,13 @@ const BUTTER      = '#FFE086';   // panel fill
 const BUTTER_DEEP = '#FFD871';   // button fill
 const INPUT_FILL  = '#FFF0BF';   // input & card fill (opaque now)
 const INPUT_BORDER= '#D28B2F';   // input/card border
-const PANEL_WIDTH = 360;         // target width for both panels
+const PANEL_WIDTH = 240; 
+const PANEL_HEIGHT = 240;        // target height for both panels
 
 const styles = StyleSheet.create({
   /* Panel: compact, fixed, top-left */
   container: {
-    position: 'absolute',
+    position: "absolute",
     top: 20,
     left: 20,
     width: PANEL_WIDTH,          // overridden responsively at render
@@ -208,7 +219,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
+    minHeight: PANEL_HEIGHT,
   },
+
+  list: { flex: 1 },
+  listContent: { paddingBottom: 8 },
 
   /* Header */
   headerRow: {
@@ -236,12 +251,15 @@ const styles = StyleSheet.create({
 
   /* Input row */
   inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10, // clear spacing between field and button
+    flexDirection: "row",
+   alignItems: "center",
+    paddingRight: 6,            // keep contents inside the right border
   },
   input: {
     flex: 1,
+   minWidth: 0,                // allow flex item to shrink on Web
+   flexShrink: 1,              // prevent overflow when row is tight
+   marginRight: 8,             // replaces the removed `gap`
     height: 38, // compact field height
     backgroundColor: INPUT_FILL,
     borderWidth: 2,
@@ -253,9 +271,9 @@ const styles = StyleSheet.create({
 
   /* Add button (compact pill) */
   addButton: {
-    minWidth: 76,
-    paddingVertical: 7,
-    paddingHorizontal: 14,
+    minWidth: 64,               // slightly narrower pill
+   paddingVertical: 7,
+   paddingHorizontal: 12,      // trims width a touch
     backgroundColor: BUTTER_DEEP,
     borderWidth: 3,
     borderColor: ORANGE_DARK,
