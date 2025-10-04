@@ -1,119 +1,87 @@
+import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Platform } from 'react-native';
-import { useState, useRef, useEffect } from 'react';
+import { useCurrency } from '@/components/CurrencyContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-export default function PlayerController() {
+export default function PlayerController({ pumpkins, setPumpkins }) {
   const [position, setPosition] = useState({ x: SCREEN_WIDTH / 2 - 20, y: SCREEN_HEIGHT / 2 - 20 });
-  const [activeDirections, setActiveDirections] = useState({
-    up: false,
-    down: false,
-    left: false,
-    right: false,
-  });
-  
   const animatedX = useRef(new Animated.Value(SCREEN_WIDTH / 2 - 20)).current;
   const animatedY = useRef(new Animated.Value(SCREEN_HEIGHT / 2 - 20)).current;
+  const { add_currency } = useCurrency();
 
-  const MOVE_SPEED = 5;
+  const MOVE_SPEED = 20;
   const CHARACTER_SIZE = 40;
+  const PUMPKIN_SIZE = 40;
 
-  // Keyboard controls for laptop/desktop
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      const handleKeyDown = (e) => {
-        if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') {
-          e.preventDefault();
-          setActiveDirections(prev => ({ ...prev, up: true }));
-        }
-        if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') {
-          e.preventDefault();
-          setActiveDirections(prev => ({ ...prev, down: true }));
-        }
-        if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') {
-          e.preventDefault();
-          setActiveDirections(prev => ({ ...prev, left: true }));
-        }
-        if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') {
-          e.preventDefault();
-          setActiveDirections(prev => ({ ...prev, right: true }));
-        }
-      };
+  // Collision detection
+  const checkCollision = (x, y) => {
+    pumpkins.forEach(pumpkin => {
+      const dx = Math.abs(x - pumpkin.x);
+      const dy = Math.abs(y - pumpkin.y);
 
-      const handleKeyUp = (e) => {
-        if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') {
-          setActiveDirections(prev => ({ ...prev, up: false }));
-        }
-        if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') {
-          setActiveDirections(prev => ({ ...prev, down: false }));
-        }
-        if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') {
-          setActiveDirections(prev => ({ ...prev, left: false }));
-        }
-        if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') {
-          setActiveDirections(prev => ({ ...prev, right: false }));
-        }
-      };
-
-      window.addEventListener('keydown', handleKeyDown);
-      window.addEventListener('keyup', handleKeyUp);
-
-      return () => {
-        window.removeEventListener('keydown', handleKeyDown);
-        window.removeEventListener('keyup', handleKeyUp);
-      };
-    }
-  }, []);
-
-  // Movement loop
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPosition(prev => {
-        let newX = prev.x;
-        let newY = prev.y;
-
-        if (activeDirections.left) {
-          newX = Math.max(0, prev.x - MOVE_SPEED);
-        }
-        if (activeDirections.right) {
-          newX = Math.min(SCREEN_WIDTH - CHARACTER_SIZE, prev.x + MOVE_SPEED);
-        }
-        if (activeDirections.up) {
-          newY = Math.max(0, prev.y - MOVE_SPEED);
-        }
-        if (activeDirections.down) {
-          newY = Math.min(SCREEN_HEIGHT - CHARACTER_SIZE - 120, prev.y + MOVE_SPEED);
-        }
-
-        if (newX !== prev.x) {
-          Animated.timing(animatedX, {
-            toValue: newX,
-            duration: 0,
-            useNativeDriver: false,
-          }).start();
-        }
-
-        if (newY !== prev.y) {
-          Animated.timing(animatedY, {
-            toValue: newY,
-            duration: 0,
-            useNativeDriver: false,
-          }).start();
-        }
-
-        return { x: newX, y: newY };
-      });
-    }, 1000 / 60); // 60 FPS
-
-    return () => clearInterval(interval);
-  }, [activeDirections]);
-
-  const handlePressIn = (direction) => {
-    setActiveDirections(prev => ({ ...prev, [direction]: true }));
+      // Check if the player overlaps with the pumpkin
+      if (dx < (CHARACTER_SIZE / 2 + PUMPKIN_SIZE / 2) && dy < (CHARACTER_SIZE / 2 + PUMPKIN_SIZE / 2)) {
+        console.log(`Collision detected! Player: (${x}, ${y}), Pumpkin: (${pumpkin.x}, ${pumpkin.y})`);
+        // Remove pumpkin
+        setPumpkins(prev => prev.filter(p => p.id !== pumpkin.id));
+        // Add random currency
+        const reward = Math.floor(Math.random() * 50) + 1;
+        add_currency(reward);
+      }
+    });
   };
 
-  const handlePressOut = (direction) => {
-    setActiveDirections(prev => ({ ...prev, [direction]: false }));
+  const moveLeft = () => {
+    setPosition(prev => {
+      const newX = Math.max(0, prev.x - MOVE_SPEED);
+      Animated.timing(animatedX, {
+        toValue: newX,
+        duration: 100,
+        useNativeDriver: false,
+      }).start();
+      checkCollision(newX, prev.y);
+      return { ...prev, x: newX };
+    });
+  };
+
+  const moveRight = () => {
+    setPosition(prev => {
+      const newX = Math.min(SCREEN_WIDTH - CHARACTER_SIZE, prev.x + MOVE_SPEED);
+      Animated.timing(animatedX, {
+        toValue: newX,
+        duration: 100,
+        useNativeDriver: false,
+      }).start();
+      checkCollision(newX, prev.y);
+      return { ...prev, x: newX };
+    });
+  };
+
+  const moveUp = () => {
+    setPosition(prev => {
+      const newY = Math.max(0, prev.y - MOVE_SPEED);
+      Animated.timing(animatedY, {
+        toValue: newY,
+        duration: 100,
+        useNativeDriver: false,
+      }).start();
+      checkCollision(prev.x, newY);
+      return { ...prev, y: newY };
+    });
+  };
+
+  const moveDown = () => {
+    setPosition(prev => {
+      const newY = Math.min(SCREEN_HEIGHT - CHARACTER_SIZE - 150, prev.y + MOVE_SPEED);
+      Animated.timing(animatedY, {
+        toValue: newY,
+        duration: 100,
+        useNativeDriver: false,
+      }).start();
+      checkCollision(prev.x, newY);
+      return { ...prev, y: newY };
+    });
   };
 
   return (
@@ -134,37 +102,21 @@ export default function PlayerController() {
       <View style={styles.controlsContainer}>
         <View style={styles.arrowContainer}>
           <View style={styles.arrowRow}>
-            <TouchableOpacity 
-              style={[styles.arrowButton, activeDirections.up && styles.arrowButtonActive]} 
-              onPressIn={() => handlePressIn('up')}
-              onPressOut={() => handlePressOut('up')}
-            >
+            <TouchableOpacity style={styles.arrowButton} onPress={moveUp}>
               <Text style={styles.arrow}>↑</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.arrowRow}>
-            <TouchableOpacity 
-              style={[styles.arrowButton, activeDirections.left && styles.arrowButtonActive]} 
-              onPressIn={() => handlePressIn('left')}
-              onPressOut={() => handlePressOut('left')}
-            >
+            <TouchableOpacity style={styles.arrowButton} onPress={moveLeft}>
               <Text style={styles.arrow}>←</Text>
             </TouchableOpacity>
             <View style={styles.spacer} />
-            <TouchableOpacity 
-              style={[styles.arrowButton, activeDirections.right && styles.arrowButtonActive]} 
-              onPressIn={() => handlePressIn('right')}
-              onPressOut={() => handlePressOut('right')}
-            >
+            <TouchableOpacity style={styles.arrowButton} onPress={moveRight}>
               <Text style={styles.arrow}>→</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.arrowRow}>
-            <TouchableOpacity 
-              style={[styles.arrowButton, activeDirections.down && styles.arrowButtonActive]} 
-              onPressIn={() => handlePressIn('down')}
-              onPressOut={() => handlePressOut('down')}
-            >
+            <TouchableOpacity style={styles.arrowButton} onPress={moveDown}>
               <Text style={styles.arrow}>↓</Text>
             </TouchableOpacity>
           </View>
