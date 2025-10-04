@@ -1,11 +1,11 @@
 import React from 'react';
 import { Dimensions, StyleSheet } from 'react-native';
-import { CurrencyProvider } from '@/components/CurrencyContext';
-import { TodoProvider } from '@/components/TodoContext';
+// CurrencyProvider is provided at the tab layout (app/(tabs)/_layout.tsx)
 import PlayerController from '@/app/PlayerController';
-import TodoList from '@/components/TodoList';
 import CompletedTasks from '@/components/CompletedTasks';
 import CurrencyDisplay from '@/components/CurrencyDisplay';
+import { TodoProvider } from '@/components/TodoContext';
+import TodoList from '@/components/TodoList';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -22,14 +22,12 @@ export default function HomeScreen() {
   };
 
   return (
-    <CurrencyProvider>
-      <TodoProvider>
-        <PlayerController pumpkins={pumpkins} setPumpkins={setPumpkins} />
-        <TodoList onShowCompleted={() => setShowCompleted(true)} onTaskCompleted={spawnPumpkin} />
-        {showCompleted ? <CompletedTasks onBack={() => setShowCompleted(false)} /> : null}
-        <CurrencyDisplay />
-      </TodoProvider>
-    </CurrencyProvider>
+    <TodoProvider>
+      <PlayerController pumpkins={pumpkins} setPumpkins={setPumpkins} />
+      <TodoList onShowCompleted={() => setShowCompleted(true)} onTaskCompleted={spawnPumpkin} />
+      {showCompleted ? <CompletedTasks onBack={() => setShowCompleted(false)} /> : null}
+      <CurrencyDisplay />
+    </TodoProvider>
   );
 }
 

@@ -1,16 +1,16 @@
-import React, { useRef, useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-  Dimensions,
-  Platform,
-} from 'react-native';
 import { useCurrency } from '@/components/CurrencyContext';
 import DecorTree from '@/components/DecorTree';
 import Pumpkin from '@/components/Pumpkin';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Dimensions,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -40,7 +40,9 @@ export default function PlayerController({
 
   const animatedX = useRef(new Animated.Value(positionRef.current.x)).current;
   const animatedY = useRef(new Animated.Value(positionRef.current.y)).current;
-  const { add_currency } = useCurrency();
+  // use shared outfit from context so the character updates when you equip in the shop
+  const { add_currency, currentOutfit } = useCurrency();
+  const displayOutfit = currentOutfit ?? outfit;
 
   // pumpkins ref to avoid stale closure
   const pumpkinsRef = useRef<PumpkinItem[]>(pumpkins);
@@ -194,7 +196,7 @@ export default function PlayerController({
             { left: animatedX as any, top: animatedY as any, zIndex: 5 },
           ]}
         >
-          <Text style={styles.characterText}>{outfit}</Text>
+          <Text style={styles.characterText}>{displayOutfit}</Text>
         </Animated.View>
 
         {/* keep pumpkin rendering here (pumpkins should have zIndex between trees and player or same layer) */}
