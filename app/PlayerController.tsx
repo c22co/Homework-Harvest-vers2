@@ -225,7 +225,8 @@ export default function PlayerController({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#90EE90' },
+  // make transparent so global ImageBackground shows through
+  container: { flex: 1, backgroundColor: 'transparent' },
   gameArea: { flex: 1, position: 'relative' },
   character: { position: 'absolute', width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   characterText: { fontSize: 40 },
