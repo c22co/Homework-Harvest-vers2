@@ -1,11 +1,6 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-<<<<<<< HEAD
-import { Slot } from 'expo-router';
-
-=======
 import { StyleSheet, View } from 'react-native';
->>>>>>> d6148dfbb96726ad15d094a034be3f888c6e4ec3
 
 import { CurrencyProvider } from '@/components/CurrencyContext';
 import { HapticTab } from '@/components/haptic-tab';
