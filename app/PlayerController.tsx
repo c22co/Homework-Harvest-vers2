@@ -26,6 +26,12 @@ const costumeImages = {
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
+// Map and camera constants
+const MAP_WIDTH = 2000;  // Large map that player can traverse
+const MAP_HEIGHT = 1500;
+const CAMERA_CENTER_X = SCREEN_WIDTH / 2;
+const CAMERA_CENTER_Y = SCREEN_HEIGHT / 2;
+
 type PumpkinItem = { id: string; x: number; y: number };
 
 export default function PlayerController({
@@ -53,22 +59,19 @@ export default function PlayerController({
   // Generate trees first so we can use them for collision detection
   const generateTrees = () => {
     const basePositions = [
-      // Top row
-      { x: 50, y: 40, scale: 2.0 + Math.random() * 1.0, flip: Math.random() < 0.5 },
-      { x: SCREEN_WIDTH / 4, y: 60, scale: 1.8 + Math.random() * 1.2, flip: Math.random() < 0.5 },
-      { x: SCREEN_WIDTH / 2, y: 30, scale: 2.2 + Math.random() * 0.8, flip: Math.random() < 0.5 },
-      { x: (SCREEN_WIDTH * 3) / 4, y: 70, scale: 1.6 + Math.random() * 1.4, flip: Math.random() < 0.5 },
-      { x: SCREEN_WIDTH - 150, y: 50, scale: 1.9 + Math.random() * 1.1, flip: Math.random() < 0.5 },
-      
-      // Middle row
-      { x: 100, y: SCREEN_HEIGHT / 3, scale: 1.7 + Math.random() * 1.3, flip: Math.random() < 0.5 },
-      { x: SCREEN_WIDTH - 200, y: SCREEN_HEIGHT / 2.5, scale: 2.1 + Math.random() * 0.9, flip: Math.random() < 0.5 },
-      
-      // Bottom row
-      { x: 30, y: SCREEN_HEIGHT - 250, scale: 2.3 + Math.random() * 0.7, flip: Math.random() < 0.5 },
-      { x: SCREEN_WIDTH / 3, y: SCREEN_HEIGHT - 300, scale: 1.8 + Math.random() * 1.2, flip: Math.random() < 0.5 },
-      { x: (SCREEN_WIDTH * 2) / 3, y: SCREEN_HEIGHT - 280, scale: 2.0 + Math.random() * 1.0, flip: Math.random() < 0.5 },
-      { x: SCREEN_WIDTH - 120, y: SCREEN_HEIGHT - 220, scale: 1.9 + Math.random() * 1.1, flip: Math.random() < 0.5 },
+      // Distribute trees across the larger map area
+      { x: 200, y: 150, scale: 1.5 + Math.random() * 0.5, flip: Math.random() < 0.5 },
+      { x: 400, y: 300, scale: 1.2 + Math.random() * 0.8, flip: Math.random() < 0.5 },
+      { x: 150, y: 400, scale: 1.8 + Math.random() * 0.7, flip: Math.random() < 0.5 },
+      { x: 600, y: 200, scale: 1.4 + Math.random() * 0.6, flip: Math.random() < 0.5 },
+      { x: 800, y: 500, scale: 1.6 + Math.random() * 0.9, flip: Math.random() < 0.5 },
+      { x: 1200, y: 300, scale: 1.3 + Math.random() * 0.7, flip: Math.random() < 0.5 },
+      { x: 1000, y: 800, scale: 1.7 + Math.random() * 0.8, flip: Math.random() < 0.5 },
+      { x: 1500, y: 400, scale: 1.5 + Math.random() * 0.6, flip: Math.random() < 0.5 },
+      { x: 300, y: 900, scale: 1.4 + Math.random() * 0.9, flip: Math.random() < 0.5 },
+      { x: 1700, y: 700, scale: 1.8 + Math.random() * 0.5, flip: Math.random() < 0.5 },
+      { x: 500, y: 1200, scale: 1.6 + Math.random() * 0.7, flip: Math.random() < 0.5 },
+      { x: 1300, y: 1000, scale: 1.2 + Math.random() * 0.8, flip: Math.random() < 0.5 },
     ];
     return basePositions;
   };
@@ -114,25 +117,51 @@ export default function PlayerController({
     return false; // No collision
   };
 
+  // Floor boundary collision detection - prevent player from going into sky area
+  const checkFloorBoundary = (px: number, py: number) => {
+    // Define the floor area boundaries (adjust these values based on your map_floor.png)
+    // These coordinates define where the floor ends and sky begins
+    const FLOOR_TOP_BOUNDARY = MAP_HEIGHT * 0.29; // Sky area is top 30% of map
+    const FLOOR_LEFT_BOUNDARY = MAP_WIDTH * 0; // 5% margin on left
+    const FLOOR_RIGHT_BOUNDARY = MAP_WIDTH * 1; // 5% margin on right
+    const FLOOR_BOTTOM_BOUNDARY = MAP_HEIGHT * 1; // 5% margin on bottom
+    
+    // Check if player would be in sky area (too high)
+    if (py < FLOOR_TOP_BOUNDARY) {
+      return false; // Cannot move into sky
+    }
+    
+    // Check if player would be outside floor boundaries
+    if (px < FLOOR_LEFT_BOUNDARY || px > FLOOR_RIGHT_BOUNDARY - CHARACTER_SIZE) {
+      return false; // Cannot move outside floor horizontally
+    }
+    
+    if (py > FLOOR_BOTTOM_BOUNDARY - CHARACTER_SIZE) {
+      return false; // Cannot move outside floor at bottom
+    }
+    
+    return true; // Position is valid on floor
+  };
+
   // Find a safe spawn position for character (not inside trees)
   const findSafeSpawnPosition = () => {
     let attempts = 0;
     const maxAttempts = 100;
     
     while (attempts < maxAttempts) {
-      const x = Math.random() * (SCREEN_WIDTH - CHARACTER_SIZE);
-      const y = Math.random() * (SCREEN_HEIGHT - CHARACTER_SIZE);
+      const x = Math.random() * (MAP_WIDTH - CHARACTER_SIZE);
+      const y = Math.random() * (MAP_HEIGHT - CHARACTER_SIZE);
       
-      if (!checkTreeCollision(x, y)) {
+      if (!checkTreeCollision(x, y) && checkFloorBoundary(x, y)) {
         return { x, y };
       }
       attempts++;
     }
     
-    // Fallback to center if no safe position found
+    // Fallback to safe floor position if no safe position found
     return {
-      x: SCREEN_WIDTH / 2 - CHARACTER_SIZE / 2,
-      y: SCREEN_HEIGHT / 2 - CHARACTER_SIZE / 2,
+      x: MAP_WIDTH / 2 - CHARACTER_SIZE / 2,
+      y: MAP_HEIGHT * 0.7, // Place in middle-lower area of floor
     };
   };
 
@@ -140,6 +169,10 @@ export default function PlayerController({
   const [position] = useState(initial);
   const positionRef = useRef({ ...initial });
 
+  // Camera system - track world position but render player centered
+  const cameraX = useRef(new Animated.Value(-positionRef.current.x + CAMERA_CENTER_X)).current;
+  const cameraY = useRef(new Animated.Value(-positionRef.current.y + CAMERA_CENTER_Y)).current;
+  
   const animatedX = useRef(new Animated.Value(positionRef.current.x)).current;
   const animatedY = useRef(new Animated.Value(positionRef.current.y)).current;
   const { add_currency, currentOutfit } = useCurrency();
@@ -192,16 +225,43 @@ export default function PlayerController({
 
   // Update position with tree collision checking
   const applyPosition = (x: number, y: number) => {
-    // Check if new position would collide with trees
-    if (checkTreeCollision(x, y)) {
-      return; // Don't move if it would cause collision
+    // Clamp to map boundaries
+    const clampedX = Math.max(0, Math.min(MAP_WIDTH - CHARACTER_SIZE, x));
+    const clampedY = Math.max(0, Math.min(MAP_HEIGHT - CHARACTER_SIZE, y));
+    
+    // Check if new position would collide with trees or go outside floor
+    if (checkTreeCollision(clampedX, clampedY) || !checkFloorBoundary(clampedX, clampedY)) {
+      return; // Don't move if it would cause collision or leave floor
     }
     
-    positionRef.current.x = x;
-    positionRef.current.y = y;
-    animatedX.setValue(x);
-    animatedY.setValue(y);
-    checkCollision(x, y);
+    positionRef.current = { x: clampedX, y: clampedY };
+    
+    // Update player position in world coordinates
+    animatedX.setValue(clampedX);
+    animatedY.setValue(clampedY);
+    
+    // Calculate desired camera position (centered on player)
+    const desiredCameraX = -clampedX + CAMERA_CENTER_X;
+    const desiredCameraY = -clampedY + CAMERA_CENTER_Y;
+    
+    // Camera boundary constraints to prevent showing areas beyond the floor
+    const CAMERA_MARGIN = 0; // How close to edge before camera stops following
+    
+    // Calculate camera bounds based on screen size and map size
+    const minCameraX = -(MAP_WIDTH - SCREEN_WIDTH + CAMERA_MARGIN);
+    const maxCameraX = -CAMERA_MARGIN;
+    const minCameraY = -(MAP_HEIGHT - SCREEN_HEIGHT + CAMERA_MARGIN);
+    const maxCameraY = -CAMERA_MARGIN;
+    
+    // Clamp camera position to stay within bounds
+    const clampedCameraX = Math.max(minCameraX, Math.min(maxCameraX, desiredCameraX));
+    const clampedCameraY = Math.max(minCameraY, Math.min(maxCameraY, desiredCameraY));
+    
+    // Update camera with bounded position
+    cameraX.setValue(clampedCameraX);
+    cameraY.setValue(clampedCameraY);
+    
+    checkCollision(clampedX, clampedY);
   };
 
   // rAF loop for smooth movement with collision detection
@@ -219,14 +279,14 @@ export default function PlayerController({
     // Try horizontal movement first
     if (keysPressed.current['a'] || keysPressed.current['arrowleft']) {
       const testX = Math.max(0, newX - delta);
-      if (!checkTreeCollision(testX, newY)) {
+      if (!checkTreeCollision(testX, newY) && checkFloorBoundary(testX, newY)) {
         newX = testX;
         moved = true;
       }
     }
     if (keysPressed.current['d'] || keysPressed.current['arrowright']) {
-      const testX = Math.min(SCREEN_WIDTH - CHARACTER_SIZE, newX + delta);
-      if (!checkTreeCollision(testX, newY)) {
+      const testX = Math.min(MAP_WIDTH - CHARACTER_SIZE, newX + delta);
+      if (!checkTreeCollision(testX, newY) && checkFloorBoundary(testX, newY)) {
         newX = testX;
         moved = true;
       }
@@ -235,25 +295,22 @@ export default function PlayerController({
     // Try vertical movement
     if (keysPressed.current['w'] || keysPressed.current['arrowup']) {
       const testY = Math.max(0, newY - delta);
-      if (!checkTreeCollision(newX, testY)) {
+      if (!checkTreeCollision(newX, testY) && checkFloorBoundary(newX, testY)) {
         newY = testY;
         moved = true;
       }
     }
     if (keysPressed.current['s'] || keysPressed.current['arrowdown']) {
-      const testY = Math.min(SCREEN_HEIGHT - CHARACTER_SIZE, newY + delta);
-      if (!checkTreeCollision(newX, testY)) {
+      const testY = Math.min(MAP_HEIGHT - CHARACTER_SIZE, newY + delta);
+      if (!checkTreeCollision(newX, testY) && checkFloorBoundary(newX, testY)) {
         newY = testY;
         moved = true;
       }
     }
 
     if (moved) {
-      positionRef.current.x = newX;
-      positionRef.current.y = newY;
-      animatedX.setValue(newX);
-      animatedY.setValue(newY);
-      checkCollision(newX, newY);
+      // Use applyPosition to update both player position and camera
+      applyPosition(newX, newY);
       rafId.current = requestAnimationFrame(loop);
     } else {
       lastTimeRef.current = null;
@@ -292,18 +349,18 @@ export default function PlayerController({
     };
   }, []);
 
-  // Updated nudge function with tree collision
+  // Updated nudge function with tree collision and floor boundary
   const nudge = (dx: number, dy: number) => {
-    const newX = Math.min(Math.max(0, positionRef.current.x + dx), SCREEN_WIDTH - CHARACTER_SIZE);
-    const newY = Math.min(Math.max(0, positionRef.current.y + dy), SCREEN_HEIGHT - CHARACTER_SIZE);
+    const newX = Math.min(Math.max(0, positionRef.current.x + dx), MAP_WIDTH - CHARACTER_SIZE);
+    const newY = Math.min(Math.max(0, positionRef.current.y + dy), MAP_HEIGHT - CHARACTER_SIZE);
     
-    // Only move if it doesn't collide with trees
-    if (!checkTreeCollision(newX, newY)) {
+    // Only move if it doesn't collide with trees and stays on floor
+    if (!checkTreeCollision(newX, newY) && checkFloorBoundary(newX, newY)) {
       applyPosition(newX, newY);
     }
   };
 
-  // Helper function to check if pumpkin position is safe (not in trees)
+  // Helper function to check if pumpkin position is safe (not in trees and on floor)
   const isPumpkinPositionSafe = (x: number, y: number) => {
     const pumpkinRect = {
       left: x,
@@ -311,6 +368,11 @@ export default function PlayerController({
       top: y,
       bottom: y + PUMPKIN_SIZE,
     };
+
+    // Check floor boundary first
+    if (!checkFloorBoundary(x, y)) {
+      return false;
+    }
 
     for (const tree of treePositions) {
       // Use correct tree size (96px base) and realistic trunk dimensions
@@ -373,11 +435,54 @@ export default function PlayerController({
 
   return (
     <View style={styles.container} pointerEvents="box-none">
-      <View style={styles.gameArea} pointerEvents="box-none">
+      {/* Camera-transformed game world */}
+      <Animated.View 
+        style={[
+          styles.gameArea, 
+          { 
+            transform: [
+              { translateX: cameraX },
+              { translateY: cameraY }
+            ]
+          }
+        ]} 
+        pointerEvents="box-none"
+      >
+        {/* Background layers */}
+        {/* Sky layer - behind floor */}
+        <Image 
+          source={require('@/assets/images/background/map_sky.png')} 
+          style={{
+            position: 'absolute',
+            width: MAP_WIDTH,
+            height: MAP_HEIGHT,
+            left: 0,
+            top: 0,
+            zIndex: -12
+          }}
+          resizeMode="stretch"
+        />
+        
+        {/* Floor layer - in front of sky */}
+        <Image 
+          source={require('@/assets/images/background/map_floor.png')} 
+          style={{
+            position: 'absolute',
+            width: MAP_WIDTH,
+            height: MAP_HEIGHT,
+            left: 0,
+            top: 0,
+            zIndex: -11
+          }}
+          resizeMode="stretch"
+        />
+        
+        {/* Trees positioned in world coordinates */}
         {treePositions?.map?.((t, i) => (
           <DecorTree key={i} x={t.x} y={t.y} scale={t.scale} flip={t.flip} />
         ))}
 
+        {/* Player character positioned in world coordinates but appears centered due to camera */}
         <Animated.View
           style={[
             styles.character,
@@ -388,10 +493,11 @@ export default function PlayerController({
           <Image source={getCurrentCostumeImage()} style={styles.characterImage} resizeMode="contain" />
         </Animated.View>
 
+        {/* Pumpkins positioned in world coordinates */}
         {pumpkins?.map?.((p) => (
           <Pumpkin key={p.id} x={p.x} y={p.y} />
         ))}
-      </View>
+      </Animated.View>
 
       {showControls && (
         <View style={styles.controlsContainer} pointerEvents="box-none">

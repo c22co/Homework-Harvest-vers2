@@ -7,7 +7,6 @@ import TodoList from '@/components/TodoList';
 import React, { useState } from 'react';
 import {
   Dimensions,
-  ImageBackground,
   Platform,
   StyleSheet,
   Text,
@@ -15,7 +14,6 @@ import {
   View,
 } from 'react-native';
 
-const bg = require('../../assets/images/background.png');
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 type PumpkinItem = { id: string; x: number; y: number };
@@ -71,52 +69,45 @@ export default function HomeScreen() {
   };
 
   return (
-    <ImageBackground
-      source={bg}
-      style={styles.background}
-      resizeMode={Platform.OS === 'web' ? 'repeat' : 'cover'}
-      imageStyle={Platform.OS === 'web' ? { resizeMode: 'repeat' } : undefined}
-    >
-      <TodoProvider>
-        <View style={styles.container}>
-          <PlayerController
-            pumpkins={pumpkins}
-            setPumpkins={setPumpkins}
-            playerRef={playerRef}
-            showControls={isTouchDevice}
-          />
+    <TodoProvider>
+      <View style={styles.container}>
+        <PlayerController
+          pumpkins={pumpkins}
+          setPumpkins={setPumpkins}
+          playerRef={playerRef}
+          showControls={isTouchDevice}
+        />
 
-          {/* UI Toggle Button - Top Center */}
-          <TouchableOpacity 
-            style={styles.uiToggle}
-            onPress={() => setUiVisible(!uiVisible)}
-          >
-            <Text style={styles.uiToggleText}>{uiVisible ? '👁️' : '👁️‍🗨️'}</Text>
-          </TouchableOpacity>
+        {/* UI Toggle Button - Top Center */}
+        <TouchableOpacity 
+          style={styles.uiToggle}
+          onPress={() => setUiVisible(!uiVisible)}
+        >
+          <Text style={styles.uiToggleText}>{uiVisible ? '👁️' : '👁️‍🗨️'}</Text>
+        </TouchableOpacity>
 
-          {/* UI Components - Positioned individually */}
-          {uiVisible && (
-            <>
-              {/* Todo List - Top Left */}
-              <View style={styles.todoListContainer}>
-                <TodoList onShowCompleted={() => setShowCompleted(true)} onTaskCompleted={spawnPumpkin} />
-                {showCompleted && <CompletedTasks onBack={() => setShowCompleted(false)} />}
-              </View>
+        {/* UI Components - Positioned individually */}
+        {uiVisible && (
+          <>
+            {/* Todo List - Top Left */}
+            <View style={styles.todoListContainer}>
+              <TodoList onShowCompleted={() => setShowCompleted(true)} onTaskCompleted={spawnPumpkin} />
+              {showCompleted && <CompletedTasks onBack={() => setShowCompleted(false)} />}
+            </View>
 
-              {/* Currency Display - Top Right */}
-              <View style={styles.currencyContainer}>
-                <CurrencyDisplay />
-              </View>
+            {/* Currency Display - Top Right */}
+            <View style={styles.currencyContainer}>
+              <CurrencyDisplay />
+            </View>
 
-              {/* Task Timer - Bottom Right */}
-              <View style={styles.timerContainer}>
-                <TaskTimer />
-              </View>
-            </>
-          )}
-        </View>
-      </TodoProvider>
-    </ImageBackground>
+            {/* Task Timer - Bottom Right */}
+            <View style={styles.timerContainer}>
+              <TaskTimer />
+            </View>
+          </>
+        )}
+      </View>
+    </TodoProvider>
   );
 }
 
