@@ -144,24 +144,20 @@ export default function PlayerController({
     };
 
     for (const tree of treePositions) {
-      // Adjust collision box based on screen size - smaller for mobile
-      const isMobile = SCREEN_WIDTH < 768; // Consider screens under 768px as mobile
-      const trunkWidthRatio = isMobile ? 0.2 : 0.25; // Even smaller on mobile
-      const trunkHeightRatio = isMobile ? 0.35 : 0.4; // Shorter on mobile
-      
-       const treeSize = 64 * tree.scale;
-      const trunkWidth = treeSize * trunkWidthRatio;
-      const trunkHeight = treeSize * trunkHeightRatio;
+      // Use correct tree size (96px base) and realistic trunk dimensions
+      const treeSize = 96 * tree.scale;
+      const trunkWidth = treeSize * 0.12; // Narrow trunk (12% of tree width)
+      const trunkHeight = treeSize * 0.25; // Trunk height (25% of tree height)
        
-       // Center the trunk collision box within the tree image
-       const trunkOffsetX = (treeSize - trunkWidth) / 2;
-       const trunkOffsetY = treeSize - trunkHeight; // Trunk at bottom of image
+      // Center the trunk horizontally and position at bottom of tree
+      const trunkOffsetX = (treeSize - trunkWidth) / 2;
+      const trunkOffsetY = treeSize - trunkHeight;
        
-       const treeRect = {
+      const treeRect = {
         left: tree.x + trunkOffsetX,
         right: tree.x + trunkOffsetX + trunkWidth,
         top: tree.y + trunkOffsetY,
-        bottom: tree.y + treeSize, // Keep bottom at tree base
+        bottom: tree.y + treeSize,
       };
 
       const isColliding =
@@ -537,6 +533,45 @@ export default function PlayerController({
     };
   }, []);
 
+  // Helper function to check if pumpkin position is safe (not in trees)
+  const isPumpkinPositionSafe = (x: number, y: number) => {
+    const pumpkinRect = {
+      left: x,
+      right: x + PUMPKIN_SIZE,
+      top: y,
+      bottom: y + PUMPKIN_SIZE,
+    };
+
+    for (const tree of treePositions) {
+      // Use correct tree size (96px base) and realistic trunk dimensions
+      const treeSize = 96 * tree.scale;
+      const trunkWidth = treeSize * 0.12; // Narrow trunk (12% of tree width)
+      const trunkHeight = treeSize * 0.25; // Trunk height (25% of tree height)
+      
+      // Center the trunk horizontally and position at bottom of tree
+      const trunkOffsetX = (treeSize - trunkWidth) / 2;
+      const trunkOffsetY = treeSize - trunkHeight;
+      
+      const treeRect = {
+        left: tree.x + trunkOffsetX,
+        right: tree.x + trunkOffsetX + trunkWidth,
+        top: tree.y + trunkOffsetY,
+        bottom: tree.y + treeSize,
+      };
+
+      const isColliding =
+        pumpkinRect.left < treeRect.right &&
+        pumpkinRect.right > treeRect.left &&
+        pumpkinRect.top < treeRect.bottom &&
+        pumpkinRect.bottom > treeRect.top;
+
+      if (isColliding) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   // Expose collision check function via playerRef for pumpkin spawning
   useEffect(() => {
     if (!playerRef) return;
@@ -566,47 +601,6 @@ export default function PlayerController({
     };
   }, [playerRef]);
 
-  // Helper function to check if pumpkin position is safe (not in trees)
-  const isPumpkinPositionSafe = (x: number, y: number) => {
-    const pumpkinRect = {
-      left: x,
-      right: x + PUMPKIN_SIZE,
-      top: y,
-      bottom: y + PUMPKIN_SIZE,
-    };
-
-    for (const tree of treePositions) {
-      // Use same smaller trunk collision for pumpkins
-      const isMobile = SCREEN_WIDTH < 768;
-      const trunkWidthRatio = isMobile ? 0.2 : 0.25;
-      const trunkHeightRatio = isMobile ? 0.35 : 0.4;
-      
-      const treeSize = 64 * tree.scale;
-      const trunkWidth = treeSize * trunkWidthRatio;
-      const trunkHeight = treeSize * trunkHeightRatio;
-      const trunkOffsetX = (treeSize - trunkWidth) / 2;
-      const trunkOffsetY = treeSize - trunkHeight;
-      
-      const treeRect = {
-        left: tree.x + trunkOffsetX,
-        right: tree.x + trunkOffsetX + trunkWidth,
-        top: tree.y + trunkOffsetY,
-        bottom: tree.y + treeSize,
-      };
-
-      const isColliding =
-        pumpkinRect.left < treeRect.right &&
-        pumpkinRect.right > treeRect.left &&
-        pumpkinRect.top < treeRect.bottom &&
-        pumpkinRect.bottom > treeRect.top;
-
-      if (isColliding) {
-        return false;
-      }
-    }
-    return true;
-  };
-
   return (
     <View style={styles.container} pointerEvents="box-none">
       <View style={styles.gameArea} pointerEvents="box-none">
@@ -617,7 +611,7 @@ export default function PlayerController({
         <Animated.View
           style={[
             styles.character,
-            { left: animatedX as any, top: animatedY as any, zIndex: 5 },
+            { left: animatedX as any, top: animatedY as any },
           ]}
           pointerEvents="none"
         >
@@ -684,7 +678,7 @@ export default function PlayerController({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   gameArea: { flex: 1, position: 'relative' },
-  character: { position: 'absolute', width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  character: { position: 'absolute', width: 40, height: 40, justifyContent: 'center', alignItems: 'center', zIndex: -1 },
   characterText: { fontSize: 40 },
   characterImage: { width: 40, height: 40 },
   controlsContainer: {
