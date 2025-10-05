@@ -10,6 +10,7 @@ import TaskTimer from '@/components/TaskTimer';
 import { TodoProvider } from '@/components/TodoContext';
 import TodoList from '@/components/TodoList';
 import { useDraggablePosition } from '@/hooks/useDraggablePosition';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -53,6 +54,60 @@ export default function HomeScreen() {
     cameraY: number;
     reviveAllTrees?: () => void;
   } | null>(null);
+
+  // Pickup animation state: array of {id, amount, anim values}
+  const [pickups, setPickups] = useState<{ id: string; amount: number; opacity: Animated.Value; translateY: Animated.Value }[]>([]);
+
+  const handlePickup = (amount: number) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
+    const opacity = new Animated.Value(0);
+    const translateY = new Animated.Value(0);
+    const item = { id, amount, opacity, translateY };
+    setPickups(prev => [...prev, item]);
+
+    // Animate in, float up, then fade out
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: -18, duration: 800, useNativeDriver: true }),
+    ]).start(() => {
+      Animated.timing(opacity, { toValue: 0, duration: 200, delay: 200, useNativeDriver: true }).start(() => {
+        setPickups(prev => prev.filter(p => p.id !== id));
+      });
+    });
+    // Also spawn coin particles for burst effect
+    spawnParticles(6);
+  };
+
+  // Particle burst state
+  const [particles, setParticles] = useState<{ id: string; animX: Animated.Value; animY: Animated.Value; opacity: Animated.Value; scale: Animated.Value }[]>([]);
+
+  const spawnParticles = (count = 6) => {
+    for (let i = 0; i < count; i++) {
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2,6)}-${i}`;
+      const animX = new Animated.Value(0);
+      const animY = new Animated.Value(0);
+      const opacity = new Animated.Value(1);
+      const scale = new Animated.Value(0.6);
+      const p = { id, animX, animY, opacity, scale };
+      setParticles(prev => [...prev, p]);
+
+      // random upward spread angles between -140deg and -40deg
+      const angleDeg = -140 + Math.random() * 100;
+      const angle = (angleDeg * Math.PI) / 180;
+      const distance = 28 + Math.random() * 36;
+      const targetX = Math.cos(angle) * distance;
+      const targetY = Math.sin(angle) * distance;
+
+      Animated.parallel([
+        Animated.timing(animX, { toValue: targetX, duration: 600 + Math.random() * 200, useNativeDriver: true }),
+        Animated.timing(animY, { toValue: targetY, duration: 600 + Math.random() * 200, useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1.0, duration: 500, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0, duration: 400, delay: 300, useNativeDriver: true }),
+      ]).start(() => {
+        setParticles(prev => prev.filter(x => x.id !== id));
+      });
+    }
+  };
 
   // Callback to spawn pumpkin(s) in world coordinates near the player (avoiding trees)
   // Number of pumpkins spawned depends on owned pumpkin seeds
@@ -159,6 +214,7 @@ export default function HomeScreen() {
           pumpkins={pumpkins}
           setPumpkins={setPumpkins}
           playerRef={playerRef}
+          onPickup={handlePickup}
           showControls={isTouchDevice}
         />
 
@@ -206,6 +262,26 @@ export default function HomeScreen() {
             {/* Currency Display - Fixed position (not draggable for now) */}
             <View style={styles.currencyContainer}>
               <CurrencyDisplay />
+              {/* Coin particle burst */}
+              {particles.map(p => (
+                <Animated.View
+                  key={p.id}
+                  style={[styles.particle, { opacity: p.opacity, transform: [{ translateX: p.animX }, { translateY: p.animY }, { scale: p.scale }] }]}
+                  pointerEvents="none"
+                >
+                  <Image source={require('@/assets/images/Coin.png')} style={styles.particleImage} />
+                </Animated.View>
+              ))}
+              {/* Pickup floating texts */}
+              {pickups.map(p => (
+                <Animated.View
+                  key={p.id}
+                  style={[styles.pickupTextContainer, { opacity: p.opacity, transform: [{ translateY: p.translateY }] }]}
+                  pointerEvents="none"
+                >
+                  <Text style={styles.pickupText}>+${p.amount}</Text>
+                </Animated.View>
+              ))}
               {treeRevivedMsg && (
                 <Animated.View
                   style={[
@@ -300,5 +376,33 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '700',
     fontSize: 13,
+  },
+  pickupTextContainer: {
+    position: 'absolute',
+    right: 6,
+    top: 8,
+    zIndex: 200,
+  },
+  pickupText: {
+    color: '#FFD166',
+    fontWeight: '900',
+    fontSize: 14,
+    textShadowColor: 'rgba(0,0,0,0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  particle: {
+    position: 'absolute',
+    right: 6,
+    top: 6,
+    zIndex: 300,
+    width: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  particleImage: {
+    width: 18,
+    height: 18,
   },
 });
