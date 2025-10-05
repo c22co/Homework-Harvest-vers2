@@ -2,10 +2,10 @@ import { useCurrency } from '@/components/CurrencyContext';
 import DecorTree from '@/components/DecorTree';
 import Pumpkin from '@/components/Pumpkin';
 import React, { useEffect, useRef, useState } from 'react';
+import { Image } from 'expo-image';
 import {
   Animated,
   Dimensions,
-  Image,
   Platform,
   StyleSheet,
   Text,
@@ -15,6 +15,14 @@ import {
 
 // Use require() for images with spaces in filenames
 const girlImg = require('../assets/images/girl-front2.png');
+
+// Costume images
+const costumeImages = {
+  default: require('../assets/images/girl-front2.png'),
+  wizard: require('../assets/images/Wizard Costume 2.png'),
+  cat: require('../assets/images/Cat Costume 2.png'),
+  alien: require('../assets/images/Alien Costume 2.png'),
+};
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -140,6 +148,12 @@ export default function PlayerController({
   const animatedY = useRef(new Animated.Value(positionRef.current.y)).current;
   const { add_currency, currentOutfit } = useCurrency();
   const displayOutfit = currentOutfit ?? outfit;
+  
+  // Get the appropriate costume image
+  const getCurrentCostumeImage = () => {
+    const outfitKey = currentOutfit as keyof typeof costumeImages;
+    return costumeImages[outfitKey] || costumeImages.default;
+  };
 
   const pumpkinsRef = useRef<PumpkinItem[]>(pumpkins || []);
   useEffect(() => {
@@ -373,7 +387,7 @@ export default function PlayerController({
           ]}
           pointerEvents="none"
         >
-          <Image source={girlImg} style={styles.characterImage} resizeMode="contain" />
+          <Image source={getCurrentCostumeImage()} style={styles.characterImage} resizeMode="contain" />
         </Animated.View>
 
         {pumpkins?.map?.((p) => (
