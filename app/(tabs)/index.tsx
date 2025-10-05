@@ -30,19 +30,44 @@ export default function HomeScreen() {
     Platform.OS !== 'web' ||
     (typeof navigator !== 'undefined' && (navigator.maxTouchPoints ?? 0) > 0);
 
-  // playerRef holds the player's world position
-  const playerRef = React.useRef<{ x: number; y: number; nudge: (dx: number, dy: number) => void } | null>(null);
+  // playerRef holds the player's world position and collision functions
+  const playerRef = React.useRef<{ 
+    x: number; 
+    y: number; 
+    nudge: (dx: number, dy: number) => void;
+    isPumpkinPositionSafe?: (x: number, y: number) => boolean;
+  } | null>(null);
 
-  // Callback to spawn a pumpkin
+  // Callback to spawn a pumpkin in world coordinates near the player (avoiding trees)
   const spawnPumpkin = () => {
     const id = Date.now().toString();
     const px = playerRef.current?.x ?? SCREEN_WIDTH / 2;
     const py = playerRef.current?.y ?? SCREEN_HEIGHT / 2;
-    const offset = 120 + Math.random() * 200;
-    const angle = Math.random() * Math.PI * 2;
-    const x = px + Math.cos(angle) * offset;
-    const y = py + Math.sin(angle) * offset;
-    setPumpkins(prev => [...prev, { id, x, y }]);
+    
+    let attempts = 0;
+    const maxAttempts = 50;
+    
+    while (attempts < maxAttempts) {
+      const offset = 120 + Math.random() * 200;
+      const angle = Math.random() * Math.PI * 2;
+      const x = px + Math.cos(angle) * offset;
+      const y = py + Math.sin(angle) * offset;
+      
+      // Check if position is within screen bounds
+      if (x >= 0 && x <= SCREEN_WIDTH - 40 && y >= 0 && y <= SCREEN_HEIGHT - 40) {
+        // Check if position is safe (not in trees)
+        if (playerRef.current?.isPumpkinPositionSafe?.(x, y)) {
+          setPumpkins(prev => [...prev, { id, x, y }]);
+          return;
+        }
+      }
+      attempts++;
+    }
+    
+    // Fallback: spawn at a safe distance from player if no safe position found
+    const fallbackX = Math.max(40, Math.min(SCREEN_WIDTH - 80, px + 100));
+    const fallbackY = Math.max(40, Math.min(SCREEN_HEIGHT - 80, py + 100));
+    setPumpkins(prev => [...prev, { id, x: fallbackX, y: fallbackY }]);
   };
 
   return (

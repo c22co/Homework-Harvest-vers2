@@ -21,44 +21,131 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 type PumpkinItem = { id: string; x: number; y: number };
 
 export default function PlayerController({
-  pumpkins = [], // ← Add default empty array
-  setPumpkins = () => {}, // ← Add default no-op
+  pumpkins = [],
+  setPumpkins = () => {},
   outfit = '🧑',
   playerRef,
   showControls = true,
 }: {
-  pumpkins?: PumpkinItem[]; // ← Make optional with ?
-  setPumpkins?: (updater: (prev: PumpkinItem[]) => PumpkinItem[]) => void; // ← Make optional with ?
+  pumpkins?: PumpkinItem[];
+  setPumpkins?: (updater: (prev: PumpkinItem[]) => PumpkinItem[]) => void;
   outfit?: string;
-  playerRef?: React.MutableRefObject<{ x: number; y: number; nudge: (dx: number, dy: number) => void } | null>;
+  playerRef?: React.MutableRefObject<{ 
+    x: number; 
+    y: number; 
+    nudge: (dx: number, dy: number) => void;
+    isPumpkinPositionSafe?: (x: number, y: number) => boolean;
+  } | null>;
   showControls?: boolean;
 }) {
   const CHARACTER_SIZE = 40;
   const PUMPKIN_SIZE = 40;
-  const MOVE_SPEED_PX_PER_SEC = 240; // tune this for speed (px/sec)
+  const MOVE_SPEED_PX_PER_SEC = 240;
 
-  const initial = {
-    x: SCREEN_WIDTH / 2 - CHARACTER_SIZE / 2,
-    y: SCREEN_HEIGHT / 2 - CHARACTER_SIZE / 2,
+  // Generate trees first so we can use them for collision detection
+  const generateTrees = () => {
+    const basePositions = [
+      // Top row
+      { x: 50, y: 40, scale: 2.0 + Math.random() * 1.0, flip: Math.random() < 0.5 },
+      { x: SCREEN_WIDTH / 4, y: 60, scale: 1.8 + Math.random() * 1.2, flip: Math.random() < 0.5 },
+      { x: SCREEN_WIDTH / 2, y: 30, scale: 2.2 + Math.random() * 0.8, flip: Math.random() < 0.5 },
+      { x: (SCREEN_WIDTH * 3) / 4, y: 70, scale: 1.6 + Math.random() * 1.4, flip: Math.random() < 0.5 },
+      { x: SCREEN_WIDTH - 150, y: 50, scale: 1.9 + Math.random() * 1.1, flip: Math.random() < 0.5 },
+      
+      // Middle row
+      { x: 100, y: SCREEN_HEIGHT / 3, scale: 1.7 + Math.random() * 1.3, flip: Math.random() < 0.5 },
+      { x: SCREEN_WIDTH - 200, y: SCREEN_HEIGHT / 2.5, scale: 2.1 + Math.random() * 0.9, flip: Math.random() < 0.5 },
+      
+      // Bottom row
+      { x: 30, y: SCREEN_HEIGHT - 250, scale: 2.3 + Math.random() * 0.7, flip: Math.random() < 0.5 },
+      { x: SCREEN_WIDTH / 3, y: SCREEN_HEIGHT - 300, scale: 1.8 + Math.random() * 1.2, flip: Math.random() < 0.5 },
+      { x: (SCREEN_WIDTH * 2) / 3, y: SCREEN_HEIGHT - 280, scale: 2.0 + Math.random() * 1.0, flip: Math.random() < 0.5 },
+      { x: SCREEN_WIDTH - 120, y: SCREEN_HEIGHT - 220, scale: 1.9 + Math.random() * 1.1, flip: Math.random() < 0.5 },
+    ];
+    return basePositions;
   };
 
-  // keep a small state only for initialization / occasional reads
+  const [treePositions] = useState(() => generateTrees());
+
+  // Tree collision detection helper - using smaller collision box for tree trunk
+  const checkTreeCollision = (px: number, py: number) => {
+    const playerRect = {
+      left: px,
+      right: px + CHARACTER_SIZE,
+      top: py,
+      bottom: py + CHARACTER_SIZE,
+    };
+
+    for (const tree of treePositions) {
+      // Adjust collision box based on screen size - smaller for mobile
+      const isMobile = SCREEN_WIDTH < 768; // Consider screens under 768px as mobile
+      const trunkWidthRatio = isMobile ? 0.2 : 0.25; // Even smaller on mobile
+      const trunkHeightRatio = isMobile ? 0.35 : 0.4; // Shorter on mobile
+      
+       const treeSize = 64 * tree.scale;
+      const trunkWidth = treeSize * trunkWidthRatio;
+      const trunkHeight = treeSize * trunkHeightRatio;
+       
+       // Center the trunk collision box within the tree image
+       const trunkOffsetX = (treeSize - trunkWidth) / 2;
+       const trunkOffsetY = treeSize - trunkHeight; // Trunk at bottom of image
+       
+       const treeRect = {
+        left: tree.x + trunkOffsetX,
+        right: tree.x + trunkOffsetX + trunkWidth,
+        top: tree.y + trunkOffsetY,
+        bottom: tree.y + treeSize, // Keep bottom at tree base
+      };
+
+      const isColliding =
+        playerRect.left < treeRect.right &&
+        playerRect.right > treeRect.left &&
+        playerRect.top < treeRect.bottom &&
+        playerRect.bottom > treeRect.top;
+
+      if (isColliding) {
+        return true; // Collision detected
+      }
+    }
+    return false; // No collision
+  };
+
+  // Find a safe spawn position for character (not inside trees)
+  const findSafeSpawnPosition = () => {
+    let attempts = 0;
+    const maxAttempts = 100;
+    
+    while (attempts < maxAttempts) {
+      const x = Math.random() * (SCREEN_WIDTH - CHARACTER_SIZE);
+      const y = Math.random() * (SCREEN_HEIGHT - CHARACTER_SIZE);
+      
+      if (!checkTreeCollision(x, y)) {
+        return { x, y };
+      }
+      attempts++;
+    }
+    
+    // Fallback to center if no safe position found
+    return {
+      x: SCREEN_WIDTH / 2 - CHARACTER_SIZE / 2,
+      y: SCREEN_HEIGHT / 2 - CHARACTER_SIZE / 2,
+    };
+  };
+
+  const [initial] = useState(() => findSafeSpawnPosition());
   const [position] = useState(initial);
-  const positionRef = useRef({ ...initial }); // authoritative per-frame position
+  const positionRef = useRef({ ...initial });
 
   const animatedX = useRef(new Animated.Value(positionRef.current.x)).current;
   const animatedY = useRef(new Animated.Value(positionRef.current.y)).current;
-  // use shared outfit from context so the character updates when you equip in the shop
   const { add_currency, currentOutfit } = useCurrency();
   const displayOutfit = currentOutfit ?? outfit;
 
-  // pumpkins ref to avoid stale closure - SAFELY handle undefined
   const pumpkinsRef = useRef<PumpkinItem[]>(pumpkins || []);
   useEffect(() => {
     pumpkinsRef.current = pumpkins || [];
   }, [pumpkins]);
 
-  // key tracking
   const keysPressed = useRef<Record<string, boolean>>({});
   const rafId = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
@@ -93,8 +180,13 @@ export default function PlayerController({
     }
   };
 
-  // update visuals immediately (no timing animation each tick)
+  // Update position with tree collision checking
   const applyPosition = (x: number, y: number) => {
+    // Check if new position would collide with trees
+    if (checkTreeCollision(x, y)) {
+      return; // Don't move if it would cause collision
+    }
+    
     positionRef.current.x = x;
     positionRef.current.y = y;
     animatedX.setValue(x);
@@ -102,40 +194,58 @@ export default function PlayerController({
     checkCollision(x, y);
   };
 
-  // rAF loop for smooth movement
+  // rAF loop for smooth movement with collision detection
   const loop = (time: number) => {
     if (lastTimeRef.current == null) lastTimeRef.current = time;
     const dtMs = time - lastTimeRef.current;
     lastTimeRef.current = time;
-    const dt = dtMs / 1000; // seconds
+    const dt = dtMs / 1000;
     let moved = false;
 
     let newX = positionRef.current.x;
     let newY = positionRef.current.y;
     const delta = MOVE_SPEED_PX_PER_SEC * dt;
 
+    // Try horizontal movement first
     if (keysPressed.current['a'] || keysPressed.current['arrowleft']) {
-      newX = Math.max(0, newX - delta);
-      moved = true;
+      const testX = Math.max(0, newX - delta);
+      if (!checkTreeCollision(testX, newY)) {
+        newX = testX;
+        moved = true;
+      }
     }
     if (keysPressed.current['d'] || keysPressed.current['arrowright']) {
-      newX = Math.min(SCREEN_WIDTH - CHARACTER_SIZE, newX + delta);
-      moved = true;
+      const testX = Math.min(SCREEN_WIDTH - CHARACTER_SIZE, newX + delta);
+      if (!checkTreeCollision(testX, newY)) {
+        newX = testX;
+        moved = true;
+      }
     }
+
+    // Try vertical movement
     if (keysPressed.current['w'] || keysPressed.current['arrowup']) {
-      newY = Math.max(0, newY - delta);
-      moved = true;
+      const testY = Math.max(0, newY - delta);
+      if (!checkTreeCollision(newX, testY)) {
+        newY = testY;
+        moved = true;
+      }
     }
     if (keysPressed.current['s'] || keysPressed.current['arrowdown']) {
-      newY = Math.min(SCREEN_HEIGHT - CHARACTER_SIZE, newY + delta);
-      moved = true;
+      const testY = Math.min(SCREEN_HEIGHT - CHARACTER_SIZE, newY + delta);
+      if (!checkTreeCollision(newX, testY)) {
+        newY = testY;
+        moved = true;
+      }
     }
 
     if (moved) {
-      applyPosition(newX, newY);
+      positionRef.current.x = newX;
+      positionRef.current.y = newY;
+      animatedX.setValue(newX);
+      animatedY.setValue(newY);
+      checkCollision(newX, newY);
       rafId.current = requestAnimationFrame(loop);
     } else {
-      // stop loop
       lastTimeRef.current = null;
       rafId.current = null;
     }
@@ -161,7 +271,6 @@ export default function PlayerController({
     const handleKeyUp = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
       keysPressed.current[k] = false;
-      // loop will stop itself when no keys are pressed
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -171,25 +280,57 @@ export default function PlayerController({
       window.removeEventListener('keyup', handleKeyUp);
       if (rafId.current != null) cancelAnimationFrame(rafId.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // on-screen buttons must use positionRef
+  // Updated nudge function with tree collision
   const nudge = (dx: number, dy: number) => {
-    const px = Math.min(Math.max(0, positionRef.current.x + dx), SCREEN_WIDTH - CHARACTER_SIZE);
-    const py = Math.min(Math.max(0, positionRef.current.y + dy), SCREEN_HEIGHT - CHARACTER_SIZE);
-    applyPosition(px, py);
+    const newX = Math.min(Math.max(0, positionRef.current.x + dx), SCREEN_WIDTH - CHARACTER_SIZE);
+    const newY = Math.min(Math.max(0, positionRef.current.y + dy), SCREEN_HEIGHT - CHARACTER_SIZE);
+    
+    // Only move if it doesn't collide with trees
+    if (!checkTreeCollision(newX, newY)) {
+      applyPosition(newX, newY);
+    }
   };
 
-  // Static tree positions
-  const treePositions = [
-    { x: 8, y: SCREEN_HEIGHT - 220, scale: 1.0, flip: false },
-    { x: SCREEN_WIDTH - 110, y: SCREEN_HEIGHT - 240, scale: 1.1, flip: true },
-    { x: 24, y: 40, scale: 0.8, flip: false },
-    { x: SCREEN_WIDTH - 160, y: 60, scale: 0.9, flip: true },
-  ];
+  // Helper function to check if pumpkin position is safe (not in trees)
+  const isPumpkinPositionSafe = (x: number, y: number) => {
+    const pumpkinRect = {
+      left: x,
+      right: x + PUMPKIN_SIZE,
+      top: y,
+      bottom: y + PUMPKIN_SIZE,
+    };
 
-  // expose current position + nudge API to parent via playerRef
+    for (const tree of treePositions) {
+      // Use same smaller trunk collision for pumpkins
+      const treeSize = 64 * tree.scale;
+      const trunkWidth = treeSize * 0.25; // Match character collision
+      const trunkHeight = treeSize * 0.4; // Match character collision
+      const trunkOffsetX = (treeSize - trunkWidth) / 2;
+      const trunkOffsetY = treeSize - trunkHeight;
+      
+      const treeRect = {
+        left: tree.x + trunkOffsetX,
+        right: tree.x + trunkOffsetX + trunkWidth,
+        top: tree.y + trunkOffsetY,
+        bottom: tree.y + treeSize,
+      };
+
+      const isColliding =
+        pumpkinRect.left < treeRect.right &&
+        pumpkinRect.right > treeRect.left &&
+        pumpkinRect.top < treeRect.bottom &&
+        pumpkinRect.bottom > treeRect.top;
+
+      if (isColliding) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Expose collision check function via playerRef for pumpkin spawning
   useEffect(() => {
     if (!playerRef) return;
     playerRef.current = {
@@ -198,10 +339,14 @@ export default function PlayerController({
       nudge: (dx: number, dy: number) => {
         const px = Math.min(Math.max(0, positionRef.current.x + dx), SCREEN_WIDTH - CHARACTER_SIZE);
         const py = Math.min(Math.max(0, positionRef.current.y + dy), SCREEN_HEIGHT - CHARACTER_SIZE);
-        applyPosition(px, py);
+        if (!checkTreeCollision(px, py)) {
+          applyPosition(px, py);
+        }
       },
+      // Add function to check safe pumpkin positions
+      isPumpkinPositionSafe,
     };
-    // keep the ref in sync each frame via a small interval/hook
+
     const iv = setInterval(() => {
       if (playerRef.current) {
         playerRef.current.x = positionRef.current.x;
@@ -217,7 +362,6 @@ export default function PlayerController({
   return (
     <View style={styles.container} pointerEvents="box-none">
       <View style={styles.gameArea} pointerEvents="box-none">
-        {/* SAFE mapping with optional chaining */}
         {treePositions?.map?.((t, i) => (
           <DecorTree key={i} x={t.x} y={t.y} scale={t.scale} flip={t.flip} />
         ))}
@@ -232,7 +376,6 @@ export default function PlayerController({
           <Image source={girlImg} style={styles.characterImage} resizeMode="contain" />
         </Animated.View>
 
-        {/* SAFE mapping with optional chaining */}
         {pumpkins?.map?.((p) => (
           <Pumpkin key={p.id} x={p.x} y={p.y} />
         ))}
@@ -263,15 +406,13 @@ const styles = StyleSheet.create({
   gameArea: { flex: 1, position: 'relative' },
   character: { position: 'absolute', width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   characterText: { fontSize: 40 },
-  characterImage: { width: 40, height: 40 }, // tune size
-  // place controls above almost everything
+  characterImage: { width: 40, height: 40 },
   controlsContainer: {
     position: 'absolute',
     bottom: 20,
     left: 20,
     zIndex: 9999,
     elevation: 9999,
-    // allow the touchables to accept events
     pointerEvents: 'auto',
   },
   arrowButton: {
