@@ -1,50 +1,17 @@
-# Welcome to your Expo app 👋
+## Overview
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Homework Harvest is a productivity app aimed to help students complete their homework, and prevent procastination. The game is designed for 8-15 year olds, but it can be used by anyone looking to be more productive. Users are able to create to-do lists that provide in-game rewards in real time as tasks are completed. Homework Harvest makes the hassle of studying much more fun, helping to encourange anyone to work harder and get more done. 
 
-## Get started
+## Our Motivation
 
-1. Install dependencies
+Achieving high marks is difficult without the right habits, and many people struggle for years to build a good work ethic. Our goal is to speed up this process, and help everyone find ways to be passionate about learning, to have the right study habits, and to avoid procrastination. 
 
-   ```bash
-   npm install
-   ```
+## Features
+- To-do list (List all the tasks that you want finish. Cross them out when you're done, set a timer for them or abort the task)
+- Timer (create a timer for a specific task to keep yourself accountable for completing it)
+- Item Shop (use coins to purchase new avatar outfits and vegetable seeds. Each seed generates a different power-up)
+- Sounds effects (background music, walking, collecting vegetables, and purchasing items in the shop)
+- Weather (there is a 20% chance of rain every time you complete a task, if you're trees die the rain will help them grow back)
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+  
+![image](https://github.com/user-attachments/assets/bbaf73c8-326b-44cf-b032-fc0acfd0fc7e)
