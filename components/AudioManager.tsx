@@ -7,6 +7,9 @@ interface AudioContextType {
   playWalkingSound: () => Promise<void>;
   stopWalkingSound: () => Promise<void>;
   playPickupSound: () => Promise<void>;
+  playPurchaseSound: () => Promise<void>;
+  playRain: () => Promise<void>;
+  stopRain: () => Promise<void>;
   isMuted: boolean;
   toggleMute: () => void;
 }
@@ -17,6 +20,8 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
   const backgroundSound = useRef<Audio.Sound | null>(null);
   const walkingSound = useRef<Audio.Sound | null>(null);
   const pickupSound = useRef<Audio.Sound | null>(null);
+  const purchaseSound = useRef<Audio.Sound | null>(null);
+  const rainSound = useRef<Audio.Sound | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isWalking, setIsWalking] = useState(false);
 
@@ -62,6 +67,25 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
         );
         pickupSound.current = pickSound;
 
+        // Load purchase (kaching) sound
+        const { sound: kaching } = await Audio.Sound.createAsync(
+          require('@/assets/images/Sounds/Kaching.mp3'),
+          {
+            volume: 0.9,
+          }
+        );
+        purchaseSound.current = kaching;
+
+        // Load rain sound (looping)
+        const { sound: rain } = await Audio.Sound.createAsync(
+          require('@/assets/images/Sounds/rain.mp3'),
+          {
+            isLooping: true,
+            volume: 0.45,
+          }
+        );
+        rainSound.current = rain;
+
         // Start background music automatically
         if (!isMuted) {
           await bgSound.playAsync();
@@ -78,6 +102,8 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
       backgroundSound.current?.unloadAsync();
       walkingSound.current?.unloadAsync();
       pickupSound.current?.unloadAsync();
+      purchaseSound.current?.unloadAsync();
+      rainSound.current?.unloadAsync();
     };
   }, []);
 
@@ -136,6 +162,39 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const playPurchaseSound = async () => {
+    try {
+      if (purchaseSound.current && !isMuted) {
+        await purchaseSound.current.setPositionAsync(0);
+        await purchaseSound.current.playAsync();
+      }
+    } catch (error) {
+      console.error('Error playing purchase sound:', error);
+    }
+  };
+
+  const playRain = async () => {
+    try {
+      if (rainSound.current && !isMuted) {
+        await rainSound.current.setPositionAsync(0);
+        await rainSound.current.playAsync();
+      }
+    } catch (error) {
+      console.error('Error playing rain sound:', error);
+    }
+  };
+
+  const stopRain = async () => {
+    try {
+      if (rainSound.current) {
+        await rainSound.current.pauseAsync();
+        await rainSound.current.setPositionAsync(0);
+      }
+    } catch (error) {
+      console.error('Error stopping rain sound:', error);
+    }
+  };
+
   const toggleMute = async () => {
     const newMutedState = !isMuted;
     setIsMuted(newMutedState);
@@ -162,6 +221,9 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
         playWalkingSound,
         stopWalkingSound,
         playPickupSound,
+        playPurchaseSound,
+        playRain,
+        stopRain,
         isMuted,
         toggleMute,
       }}

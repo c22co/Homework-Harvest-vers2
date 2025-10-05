@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useAudio } from '@/components/AudioManager';
 
 interface ShoppingPageProps {
   onClose: () => void;
@@ -50,6 +51,8 @@ export default function ShoppingPage({
     pepperEffect,
   } = useCurrency();
 
+  const { playPurchaseSound } = useAudio();
+
   const [loadingItems, setLoadingItems] = useState<{[key: string]: boolean}>({});
   const [purchaseSuccess, setPurchaseSuccess] = useState<string | null>(null);
 
@@ -68,6 +71,8 @@ export default function ShoppingPage({
     // Simulate purchase delay for better UX
     setTimeout(() => {
       add_currency(-price);
+      // Play purchase sound
+      try { playPurchaseSound(); } catch (e) { /* ignore */ }
       setOwnedOutfits(prev => [...prev, outfitId]);
       setLoadingItems(prev => ({...prev, [outfitId]: false}));
       setPurchaseSuccess(outfitId);
@@ -105,6 +110,8 @@ export default function ShoppingPage({
     // Simulate purchase delay for better UX
     setTimeout(() => {
       add_currency(-price);
+      // Play purchase sound
+      try { playPurchaseSound(); } catch (e) { /* ignore */ }
       setOwnedSeeds(prev => ({ ...prev, [seedId]: (prev[seedId] || 0) + 1 }));
       setLoadingItems(prev => ({...prev, [seedId]: false}));
       setPurchaseSuccess(seedId);
