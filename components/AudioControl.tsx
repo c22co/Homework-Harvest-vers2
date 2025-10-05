@@ -17,7 +17,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 20,
     left: '50%',
-    marginLeft: 25, // Position next to the UI toggle button
+    marginLeft: -25, // Center cluster: UI(-75), Audio(-25), Shop(+25)
     width: 50,
     height: 50,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',

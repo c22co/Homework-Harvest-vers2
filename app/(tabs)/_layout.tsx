@@ -3,7 +3,6 @@ import React from 'react';
 
 import { CurrencyProvider } from '@/components/CurrencyContext';
 import { TodoProvider } from '@/components/TodoContext';
-import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -18,7 +17,10 @@ export default function TabLayout() {
           screenOptions={{
             tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
             headerShown: false,
-            tabBarButton: HapticTab,
+            // Hide bottom nav bar; we'll use a top button instead
+            tabBarStyle: { display: 'none' },
+            tabBarShowLabel: false,
+            tabBarButton: () => null,
           }}>
           <Tabs.Screen
             name="index"

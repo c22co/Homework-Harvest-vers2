@@ -265,7 +265,9 @@ export default function ShoppingPage({
           <Text style={styles.shopTitle}>Shop</Text>
           <Text style={styles.subtitle}>Costumes & Seeds</Text>
         </View>
-        <View style={styles.spacer} />
+        <TouchableOpacity style={styles.closeButton} onPress={onClose} accessibilityLabel="Close shop">
+          <Text style={styles.closeButtonText}>✖</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -378,6 +380,26 @@ const styles = StyleSheet.create({
   },
   spacer: {
     width: 80,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  closeButtonText: {
+    color: '#8B4513',
+    fontSize: 16,
+    fontWeight: '900',
   },
   scrollView: {
     flex: 1,

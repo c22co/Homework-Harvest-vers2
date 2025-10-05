@@ -10,6 +10,7 @@ import AudioControl from '@/components/AudioControl';
 import DraggableContainer from '@/components/DraggableContainer';
 import { useDraggablePosition } from '@/hooks/useDraggablePosition';
 import React, { useState } from 'react';
+import { router } from 'expo-router';
 import {
   Dimensions,
   Platform,
@@ -118,6 +119,14 @@ export default function HomeScreen() {
           <Text style={styles.uiToggleText}>{uiVisible ? '👁️' : '👁️‍🗨️'}</Text>
         </TouchableOpacity>
 
+        {/* Shop Button - Top Center cluster */}
+        <TouchableOpacity
+          style={styles.shopButton}
+          onPress={() => router.replace('/(tabs)/explore')}
+        >
+          <Text style={styles.uiToggleText}>🛒</Text>
+        </TouchableOpacity>
+
         {/* Rain Animation */}
         <Rain 
           isRaining={isRaining} 
@@ -170,7 +179,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 20,
     left: '50%',
-    marginLeft: -25,
+    marginLeft: -75,
     width: 50,
     height: 50,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -186,6 +195,24 @@ const styles = StyleSheet.create({
   },
   uiToggleText: {
     fontSize: 24,
+  },
+  shopButton: {
+    position: 'absolute',
+    top: 20,
+    left: '50%',
+    marginLeft: 25, // positioned to the right of audio; cluster centered
+    width: 50,
+    height: 50,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   currencyContainer: {
     position: 'absolute',

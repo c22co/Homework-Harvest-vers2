@@ -15,6 +15,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 40,
     height: 40,
-    zIndex: 5,
+    // Render pumpkins behind trees (trees use zIndex: 1). Keep above floor (zIndex ~ -11).
+    zIndex: -2,
   },
 });
