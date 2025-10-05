@@ -1,16 +1,16 @@
 import PlayerController from '@/app/PlayerController';
+import AudioControl from '@/components/AudioControl';
 import { CompletedTasks } from '@/components/CompletedTasks';
 import { useCurrency } from '@/components/CurrencyContext';
 import CurrencyDisplay from '@/components/CurrencyDisplay';
+import DraggableContainer from '@/components/DraggableContainer';
 import Rain from '@/components/Rain';
 import TaskTimer from '@/components/TaskTimer';
 import { TodoProvider } from '@/components/TodoContext';
 import TodoList from '@/components/TodoList';
-import AudioControl from '@/components/AudioControl';
-import DraggableContainer from '@/components/DraggableContainer';
 import { useDraggablePosition } from '@/hooks/useDraggablePosition';
-import React, { useState } from 'react';
 import { router } from 'expo-router';
+import React, { useState } from 'react';
 import {
   Dimensions,
   Platform,

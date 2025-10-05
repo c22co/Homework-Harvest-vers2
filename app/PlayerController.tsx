@@ -1,9 +1,8 @@
-import { useCurrency } from '@/components/CurrencyContext';
-import { useTodo } from '@/components/TodoContext';
 import { useAudio } from '@/components/AudioManager';
+import { useCurrency } from '@/components/CurrencyContext';
 import DecorTree from '@/components/DecorTree';
-import Rainbow from '../components/Rainbow';
 import Pumpkin from '@/components/Pumpkin';
+import { useTodo } from '@/components/TodoContext';
 import { Image } from 'expo-image';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -15,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Rainbow from '../components/Rainbow';
 
 // Use require() for images with spaces in filenames
 const girlImg = require('../assets/images/girl-front2.png');

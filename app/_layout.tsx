@@ -1,8 +1,8 @@
+import { AudioProvider } from '@/components/AudioManager';
 import { CurrencyProvider } from '@/components/CurrencyContext';
 import { TodoProvider } from '@/components/TodoContext';
-import { AudioProvider } from '@/components/AudioManager';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Slot } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function RootLayout() {
   return (

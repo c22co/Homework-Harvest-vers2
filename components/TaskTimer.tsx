@@ -1,13 +1,13 @@
 import { useTodo } from "@/components/TodoContext";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    useWindowDimensions,
-    Vibration,
-    View,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useWindowDimensions,
+  Vibration,
+  View,
 } from "react-native";
 
 /** Theme tokens */
