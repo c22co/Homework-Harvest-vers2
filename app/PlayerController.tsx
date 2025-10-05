@@ -108,27 +108,66 @@ export default function PlayerController({
 
   // Generate trees first so we can use them for collision detection
   const generateTrees = () => {
+    // Define floor boundaries - trees should only spawn in floor area, not sky
+    const FLOOR_TOP_BOUNDARY = MAP_HEIGHT * 0.29; // Sky area is top 30% of map
+    const FLOOR_LEFT_BOUNDARY = MAP_WIDTH * 0;
+    const FLOOR_RIGHT_BOUNDARY = MAP_WIDTH * 1;
+    const FLOOR_BOTTOM_BOUNDARY = MAP_HEIGHT * 1;
+    
     // Define a safe zone in the center where trees won't spawn
     const centerX = SCREEN_WIDTH / 2;
     const centerY = SCREEN_HEIGHT / 2;
     const safeZoneRadius = 80; // Clear area around center for character spawning
 
-    const basePositions = [
-      // Distribute trees across the larger map area
-      { x: 200, y: 150, scale: 1.5 + Math.random() * 0.5, flip: Math.random() < 0.5 },
-      { x: 400, y: 300, scale: 1.2 + Math.random() * 0.8, flip: Math.random() < 0.5 },
-      { x: 150, y: 400, scale: 1.8 + Math.random() * 0.7, flip: Math.random() < 0.5 },
-      { x: 600, y: 200, scale: 1.4 + Math.random() * 0.6, flip: Math.random() < 0.5 },
-      { x: 800, y: 500, scale: 1.6 + Math.random() * 0.9, flip: Math.random() < 0.5 },
-      { x: 1200, y: 300, scale: 1.3 + Math.random() * 0.7, flip: Math.random() < 0.5 },
-      { x: 1000, y: 800, scale: 1.7 + Math.random() * 0.8, flip: Math.random() < 0.5 },
-      { x: 1500, y: 400, scale: 1.5 + Math.random() * 0.6, flip: Math.random() < 0.5 },
-      { x: 300, y: 900, scale: 1.4 + Math.random() * 0.9, flip: Math.random() < 0.5 },
-      { x: 1700, y: 700, scale: 1.8 + Math.random() * 0.5, flip: Math.random() < 0.5 },
-      { x: 500, y: 1200, scale: 1.6 + Math.random() * 0.7, flip: Math.random() < 0.5 },
-      { x: 1300, y: 1000, scale: 1.2 + Math.random() * 0.8, flip: Math.random() < 0.5 },
-    ];
-    return basePositions;
+    const trees = [];
+    const numTrees = 15; // Number of trees to generate
+    
+    for (let i = 0; i < numTrees; i++) {
+      let attempts = 0;
+      const maxAttempts = 50;
+      
+      while (attempts < maxAttempts) {
+        // Generate random position within floor boundaries
+        const x = FLOOR_LEFT_BOUNDARY + Math.random() * (FLOOR_RIGHT_BOUNDARY - FLOOR_LEFT_BOUNDARY);
+        const y = FLOOR_TOP_BOUNDARY + Math.random() * (FLOOR_BOTTOM_BOUNDARY - FLOOR_TOP_BOUNDARY);
+        const scale = 1.2 + Math.random() * 0.8; // Random scale between 1.2 and 2.0
+        
+        // Check if position is outside safe zone around player spawn
+        const distanceFromCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+        
+        if (distanceFromCenter > safeZoneRadius) {
+          // Check if this tree would overlap with any existing trees
+          const treeSize = 96 * scale;
+          const minDistance = treeSize * 0.8; // Minimum distance between tree centers (80% of tree size)
+          
+          let tooClose = false;
+          for (const existingTree of trees) {
+            const existingTreeSize = 96 * existingTree.scale;
+            const requiredDistance = (treeSize + existingTreeSize) * 0.4; // Combined radius with some spacing
+            const distance = Math.sqrt((x - existingTree.x) ** 2 + (y - existingTree.y) ** 2);
+            
+            if (distance < requiredDistance) {
+              tooClose = true;
+              break;
+            }
+          }
+          
+          if (!tooClose) {
+            // Valid position found - add tree
+            trees.push({
+              x,
+              y,
+              scale,
+              flip: Math.random() < 0.5
+            });
+            break;
+          }
+        }
+        attempts++;
+      }
+    }
+    
+    return trees;
   };
 
   const [treePositions] = useState(() => generateTrees());
@@ -179,7 +218,7 @@ export default function PlayerController({
     const FLOOR_TOP_BOUNDARY = MAP_HEIGHT * 0.29; // Sky area is top 30% of map
     const FLOOR_LEFT_BOUNDARY = MAP_WIDTH * 0; // 5% margin on left
     const FLOOR_RIGHT_BOUNDARY = MAP_WIDTH * 1; // 5% margin on right
-    const FLOOR_BOTTOM_BOUNDARY = MAP_HEIGHT * 1; // 5% margin on bottom
+    const FLOOR_BOTTOM_BOUNDARY = MAP_HEIGHT * 0.98; // 5% margin on bottom
     
     // Check if player would be in sky area (too high)
     if (py < FLOOR_TOP_BOUNDARY) {
