@@ -5,14 +5,15 @@ import { useCurrency } from '@/components/CurrencyContext';
 import CurrencyDisplay from '@/components/CurrencyDisplay';
 import DraggableContainer from '@/components/DraggableContainer';
 import Rain from '@/components/Rain';
-import Rainbow from '@/components/Rainbow';
+import { useAudio } from '@/components/AudioManager';
 import TaskTimer from '@/components/TaskTimer';
 import { TodoProvider } from '@/components/TodoContext';
 import TodoList from '@/components/TodoList';
 import { useDraggablePosition } from '@/hooks/useDraggablePosition';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
+  Animated,
   Dimensions,
   Platform,
   StyleSheet,
@@ -32,6 +33,7 @@ export default function HomeScreen() {
   const [isRaining, setIsRaining] = useState(false);
   const [showRainbow, setShowRainbow] = useState(false);
   const { getPumpkinMultiplier } = useCurrency();
+  const { playRain, stopRain } = useAudio();
 
   // Draggable position hooks for mobile
   const todoPosition = useDraggablePosition('TODO_POSITION', { x: 20, y: 20 });
@@ -71,12 +73,8 @@ export default function HomeScreen() {
       // When rain starts, revive all dead trees and return sprites to alive
       const revive = playerRef.current?.reviveAllTrees;
       if (revive) revive();
-      
-      // Check if there are no dead trees and show rainbow
-      const getDeadTreesCount = playerRef.current?.getDeadTreesCount;
-      if (getDeadTreesCount && getDeadTreesCount() === 0) {
-        setShowRainbow(true);
-      }
+      // Show transient notification that trees were revived
+      showTreeRevivedNotification('Trees revived');
     }
     
     // Spawn multiple pumpkins based on multiplier
@@ -110,6 +108,52 @@ export default function HomeScreen() {
       }
     }
   };
+
+  // Notification for tree revival (appears under the coin icon)
+  const [treeRevivedMsg, setTreeRevivedMsg] = useState<string | null>(null);
+  const notifOpacity = useRef(new Animated.Value(0)).current;
+  const notifTranslate = useRef(new Animated.Value(-6)).current;
+  const notifTimerRef = useRef<number | null>(null);
+
+  const showTreeRevivedNotification = (msg: string) => {
+    // Clear previous timeout if present
+    if (notifTimerRef.current) {
+      clearTimeout(notifTimerRef.current as any);
+      notifTimerRef.current = null;
+    }
+
+    setTreeRevivedMsg(msg);
+    // Reset values and animate in
+    notifOpacity.setValue(0);
+    notifTranslate.setValue(-6);
+    Animated.parallel([
+      Animated.timing(notifOpacity, { toValue: 1, duration: 220, useNativeDriver: true }),
+      Animated.timing(notifTranslate, { toValue: 0, duration: 220, useNativeDriver: true }),
+    ]).start();
+
+    // Hide after 2.5s
+    notifTimerRef.current = (setTimeout(() => {
+      Animated.timing(notifOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+        setTreeRevivedMsg(null);
+      });
+      notifTimerRef.current = null;
+    }, 2500) as unknown) as number;
+  };
+
+  useEffect(() => {
+    return () => {
+      if (notifTimerRef.current) clearTimeout(notifTimerRef.current as any);
+    };
+  }, []);
+
+  // Play/stop rain sound when isRaining changes
+  useEffect(() => {
+    if (isRaining) {
+      playRain().catch(() => {});
+    } else {
+      stopRain().catch(() => {});
+    }
+  }, [isRaining, playRain, stopRain]);
 
   return (
     <TodoProvider>
@@ -172,6 +216,17 @@ export default function HomeScreen() {
             {/* Currency Display - Fixed position (not draggable for now) */}
             <View style={styles.currencyContainer}>
               <CurrencyDisplay />
+              {treeRevivedMsg && (
+                <Animated.View
+                  style={[
+                    styles.treeNotif,
+                    { opacity: notifOpacity, transform: [{ translateY: notifTranslate }] },
+                  ]}
+                  pointerEvents="none"
+                >
+                  <Text style={styles.treeNotifText}>{treeRevivedMsg}</Text>
+                </Animated.View>
+              )}
             </View>
 
             {/* Task Timer - Draggable on mobile, fixed on web */}
@@ -237,5 +292,23 @@ const styles = StyleSheet.create({
     top: 20,
     right: 20,
     zIndex: 100,
+  },
+  treeNotif: {
+    marginTop: 8,
+    backgroundColor: 'rgba(34,197,94,0.95)', // green
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+  },
+  treeNotifText: {
+    color: 'white',
+    fontWeight: '700',
+    fontSize: 13,
   },
 });
