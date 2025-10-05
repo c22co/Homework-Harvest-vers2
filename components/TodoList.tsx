@@ -165,7 +165,13 @@ const TodoList = ({
 
   return (
     <View style={[styles.container, { width: panelWidth, left: EDGE }]}>
-      <Text style={styles.title}>To-do</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>To-do</Text>
+        {/* Drag indicator for mobile */}
+        <View style={styles.dragIndicator}>
+          <Text style={styles.dragIcon}>⋮⋮</Text>
+        </View>
+      </View>
 
       <View style={styles.inputRow}>
         <TextInput
@@ -254,6 +260,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '900',
     color: ORANGE_DARK,
+  },
+  dragIndicator: {
+    opacity: 0.6,
+  },
+  dragIcon: {
+    fontSize: 16,
+    color: ORANGE_DARK,
+    fontWeight: 'bold',
   },
 
   /* Inner section (kept for parity; unused here) */

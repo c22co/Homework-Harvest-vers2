@@ -1,5 +1,6 @@
 import { useCurrency } from '@/components/CurrencyContext';
 import { useTodo } from '@/components/TodoContext';
+import { useAudio } from '@/components/AudioManager';
 import DecorTree from '@/components/DecorTree';
 import Pumpkin from '@/components/Pumpkin';
 import { Image } from 'expo-image';
@@ -286,6 +287,7 @@ export default function PlayerController({
   const animatedX = useRef(new Animated.Value(positionRef.current.x)).current;
   const animatedY = useRef(new Animated.Value(positionRef.current.y)).current;
   const { add_currency, currentOutfit, pepperEffect } = useCurrency();
+  const { playWalkingSound, stopWalkingSound, playPickupSound } = useAudio();
   
   // Movement direction state for character animation
   const [movementDirection, setMovementDirection] = useState<'idle' | 'walkingLeft' | 'walkingRight' | 'walkingUp' | 'walkingDown'>('idle');
@@ -319,6 +321,16 @@ export default function PlayerController({
   const getCurrentRotation = () => {
     return getCurrentCostumeAnimation().rotation;
   };
+  
+  // Handle walking sound effects based on movement direction
+  useEffect(() => {
+    if (movementDirection !== 'idle') {
+      playWalkingSound();
+    } else {
+      stopWalkingSound();
+    }
+  }, [movementDirection, playWalkingSound, stopWalkingSound]);
+  
   const displayOutfit = currentOutfit ?? outfit;
 
   const pumpkinsRef = useRef<PumpkinItem[]>(pumpkins || []);
@@ -425,6 +437,8 @@ export default function PlayerController({
         setPumpkins(prev => prev.filter(p => p.id !== pumpkin.id));
         const reward = Math.floor(Math.random() * 50) + 1;
         add_currency(reward);
+        // Play pickup sound effect
+        playPickupSound();
       }
     }
   };
@@ -861,38 +875,50 @@ export default function PlayerController({
 
       {showControls && (
         <View style={styles.controlsContainer} pointerEvents="box-none">
-          <TouchableOpacity 
-            style={styles.arrowButton} 
-            onPressIn={() => handleTouchStart('left')}
-            onPressOut={() => handleTouchEnd('left')}
-            onPress={() => nudge(-20, 0)} // Fallback for quick taps
-          >
-            <Text>←</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.arrowButton} 
-            onPressIn={() => handleTouchStart('right')}
-            onPressOut={() => handleTouchEnd('right')}
-            onPress={() => nudge(20, 0)} // Fallback for quick taps
-          >
-            <Text>→</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.arrowButton} 
-            onPressIn={() => handleTouchStart('up')}
-            onPressOut={() => handleTouchEnd('up')}
-            onPress={() => nudge(0, -20)} // Fallback for quick taps
-          >
-            <Text>↑</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.arrowButton} 
-            onPressIn={() => handleTouchStart('down')}
-            onPressOut={() => handleTouchEnd('down')}
-            onPress={() => nudge(0, 20)} // Fallback for quick taps
-          >
-            <Text>↓</Text>
-          </TouchableOpacity>
+          {/* WASD-style directional pad layout */}
+          <View style={styles.dpadContainer}>
+            {/* Top row - W (Up) */}
+            <View style={styles.dpadRow}>
+              <TouchableOpacity 
+                style={[styles.arrowButton, styles.centerButton]} 
+                onPressIn={() => handleTouchStart('up')}
+                onPressOut={() => handleTouchEnd('up')}
+                onPress={() => nudge(0, -20)} // Fallback for quick taps
+              >
+                <Text style={styles.buttonText}>W</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* Middle row - A (Left), S (Down), D (Right) */}
+            <View style={styles.dpadRow}>
+              <TouchableOpacity 
+                style={styles.arrowButton} 
+                onPressIn={() => handleTouchStart('left')}
+                onPressOut={() => handleTouchEnd('left')}
+                onPress={() => nudge(-20, 0)} // Fallback for quick taps
+              >
+                <Text style={styles.buttonText}>A</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.arrowButton} 
+                onPressIn={() => handleTouchStart('down')}
+                onPressOut={() => handleTouchEnd('down')}
+                onPress={() => nudge(0, 20)} // Fallback for quick taps
+              >
+                <Text style={styles.buttonText}>S</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.arrowButton} 
+                onPressIn={() => handleTouchStart('right')}
+                onPressOut={() => handleTouchEnd('right')}
+                onPress={() => nudge(20, 0)} // Fallback for quick taps
+              >
+                <Text style={styles.buttonText}>D</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       )}
     </View>
@@ -913,13 +939,37 @@ const styles = StyleSheet.create({
     elevation: 9999,
     pointerEvents: 'auto',
   },
+  dpadContainer: {
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  dpadRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   arrowButton: {
-    width: 45,
-    height: 45,
+    width: 50,
+    height: 50,
     backgroundColor: 'rgba(255,255,255,0.95)',
     justifyContent: 'center',
     alignItems: 'center',
-    margin: 5,
-    borderRadius: 22.5,
+    margin: 3,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: 'rgba(0,0,0,0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  centerButton: {
+    // Additional styling for the W button to center it above ASD
+  },
+  buttonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
   },
 });

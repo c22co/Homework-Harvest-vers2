@@ -98,6 +98,9 @@ export default function TaskTimer({ initialTaskName = "" }: { initialTaskName?: 
       {/* Header */}
       <View style={styles.titlePill}>
         <Text style={styles.titleText}>Timer</Text>
+        <View style={styles.dragIndicator}>
+          <Text style={styles.dragIcon}>⋮⋮</Text>
+        </View>
         {running && (
           <TouchableOpacity style={styles.close} onPress={cancel} hitSlop={8}>
             <Text style={styles.closeText}>×</Text>
@@ -183,6 +186,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   titleText: { color: ORANGE_DARK, fontSize: 16, fontWeight: "900" },
+  dragIndicator: {
+    opacity: 0.6,
+    marginLeft: 8,
+  },
+  dragIcon: {
+    fontSize: 14,
+    color: ORANGE_DARK,
+    fontWeight: 'bold',
+  },
   close: {
     position: "absolute",
     right: 6,

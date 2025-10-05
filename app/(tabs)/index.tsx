@@ -6,6 +6,9 @@ import Rain from '@/components/Rain';
 import TaskTimer from '@/components/TaskTimer';
 import { TodoProvider } from '@/components/TodoContext';
 import TodoList from '@/components/TodoList';
+import AudioControl from '@/components/AudioControl';
+import DraggableContainer from '@/components/DraggableContainer';
+import { useDraggablePosition } from '@/hooks/useDraggablePosition';
 import React, { useState } from 'react';
 import {
   Dimensions,
@@ -26,6 +29,10 @@ export default function HomeScreen() {
   const [uiVisible, setUiVisible] = useState(true);
   const [isRaining, setIsRaining] = useState(false);
   const { getPumpkinMultiplier } = useCurrency();
+
+  // Draggable position hooks for mobile
+  const todoPosition = useDraggablePosition('TODO_POSITION', { x: 20, y: 20 });
+  const timerPosition = useDraggablePosition('TIMER_POSITION', { x: SCREEN_WIDTH - 270, y: SCREEN_HEIGHT - 270 });
 
   // detect touch device for mobile controls
   const isTouchDevice =
@@ -118,25 +125,37 @@ export default function HomeScreen() {
           cameraX={playerRef.current?.cameraX || 0}
           cameraY={playerRef.current?.cameraY || 0}
         />
+        {/* Audio Control Button - Top Center Right */}
+        <AudioControl />
 
         {/* UI Components - Positioned individually */}
         {uiVisible && (
           <>
-            {/* Todo List - Top Left */}
-            <View style={styles.todoListContainer}>
+            {/* Todo List - Draggable on mobile, fixed on web */}
+            <DraggableContainer
+              initialX={todoPosition.position.x}
+              initialY={todoPosition.position.y}
+              onPositionChange={(x, y) => todoPosition.updatePosition({ x, y })}
+              disabled={!isTouchDevice || !todoPosition.isLoaded}
+            >
               <TodoList onShowCompleted={() => setShowCompleted(true)} onTaskCompleted={spawnPumpkin} />
               {showCompleted && <CompletedTasks onBack={() => setShowCompleted(false)} />}
-            </View>
+            </DraggableContainer>
 
-            {/* Currency Display - Top Right */}
+            {/* Currency Display - Fixed position (not draggable for now) */}
             <View style={styles.currencyContainer}>
               <CurrencyDisplay />
             </View>
 
-            {/* Task Timer - Bottom Right */}
-            <View style={styles.timerContainer}>
+            {/* Task Timer - Draggable on mobile, fixed on web */}
+            <DraggableContainer
+              initialX={timerPosition.position.x}
+              initialY={timerPosition.position.y}
+              onPositionChange={(x, y) => timerPosition.updatePosition({ x, y })}
+              disabled={!isTouchDevice || !timerPosition.isLoaded}
+            >
               <TaskTimer />
-            </View>
+            </DraggableContainer>
           </>
         )}
       </View>
@@ -168,21 +187,9 @@ const styles = StyleSheet.create({
   uiToggleText: {
     fontSize: 24,
   },
-  todoListContainer: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    zIndex: 100,
-  },
   currencyContainer: {
     position: 'absolute',
     top: 20,
-    right: 20,
-    zIndex: 100,
-  },
-  timerContainer: {
-    position: 'absolute',
-    bottom: 20,
     right: 20,
     zIndex: 100,
   },
