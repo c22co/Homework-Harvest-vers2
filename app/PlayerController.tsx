@@ -104,6 +104,7 @@ export default function PlayerController({
     cameraX: number;
     cameraY: number;
     reviveAllTrees?: () => void;
+    getDeadTreesCount?: () => number;
   } | null>;
   showControls?: boolean;
 }) {
@@ -809,6 +810,8 @@ export default function PlayerController({
       cameraY: (cameraY as any)._value || 0,
       // Expose tree revival method so HomeScreen can call it when rain starts
       reviveAllTrees,
+      // Expose dead trees count for rainbow logic
+      getDeadTreesCount: () => deadTrees.size,
     };
 
     const iv = setInterval(() => {

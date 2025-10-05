@@ -5,6 +5,7 @@ import { useCurrency } from '@/components/CurrencyContext';
 import CurrencyDisplay from '@/components/CurrencyDisplay';
 import DraggableContainer from '@/components/DraggableContainer';
 import Rain from '@/components/Rain';
+import Rainbow from '@/components/Rainbow';
 import TaskTimer from '@/components/TaskTimer';
 import { TodoProvider } from '@/components/TodoContext';
 import TodoList from '@/components/TodoList';
@@ -29,6 +30,7 @@ export default function HomeScreen() {
   const [pumpkins, setPumpkins] = useState<PumpkinItem[]>([]);
   const [uiVisible, setUiVisible] = useState(true);
   const [isRaining, setIsRaining] = useState(false);
+  const [showRainbow, setShowRainbow] = useState(false);
   const { getPumpkinMultiplier } = useCurrency();
 
   // Draggable position hooks for mobile
@@ -49,6 +51,7 @@ export default function HomeScreen() {
     cameraX: number;
     cameraY: number;
     reviveAllTrees?: () => void;
+    getDeadTreesCount?: () => number;
   } | null>(null);
 
   // Callback to spawn pumpkin(s) in world coordinates near the player (avoiding trees)
@@ -62,11 +65,18 @@ export default function HomeScreen() {
     // Weather logic: if raining, stop it; if clear, 20% chance to start rain
     if (isRaining) {
       setIsRaining(false); // Stop rain if it's currently raining
+      setShowRainbow(false); // Hide rainbow when rain stops
     } else if (Math.random() < 0.2) {
       setIsRaining(true); // 20% chance to start rain if clear
       // When rain starts, revive all dead trees and return sprites to alive
       const revive = playerRef.current?.reviveAllTrees;
       if (revive) revive();
+      
+      // Check if there are no dead trees and show rainbow
+      const getDeadTreesCount = playerRef.current?.getDeadTreesCount;
+      if (getDeadTreesCount && getDeadTreesCount() === 0) {
+        setShowRainbow(true);
+      }
     }
     
     // Spawn multiple pumpkins based on multiplier
@@ -134,6 +144,14 @@ export default function HomeScreen() {
           cameraX={playerRef.current?.cameraX || 0}
           cameraY={playerRef.current?.cameraY || 0}
         />
+        
+        {/* Rainbow - appears when rain starts and no dead trees */}
+        <Rainbow 
+          visible={showRainbow}
+          cameraX={playerRef.current?.cameraX || 0}
+          cameraY={playerRef.current?.cameraY || 0}
+        />
+        
         {/* Audio Control Button - Top Center Right */}
         <AudioControl />
 
