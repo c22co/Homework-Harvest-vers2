@@ -20,7 +20,7 @@ const INPUT_BORDER = "#D28B2F";
 /** Compact panel + timer range */
 const PANEL_WIDTH = 240;
 const PANEL_HEIGHT = 240;
-const MIN_MIN = 2;
+const MIN_MIN = 5;
 const MAX_MIN = 120;
 
 export default function TaskTimer({ initialTaskName = "" }: { initialTaskName?: string }) {
@@ -32,7 +32,7 @@ export default function TaskTimer({ initialTaskName = "" }: { initialTaskName?: 
 
   const [panelVisible, setPanelVisible] = useState(true);
   const [task, setTask] = useState(initialTaskName);
-  const [mins, setMins] = useState<number>(2);
+  const [mins, setMins] = useState<number>(5);
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const running = secondsLeft !== null;
 
@@ -126,8 +126,8 @@ export default function TaskTimer({ initialTaskName = "" }: { initialTaskName?: 
       {!running ? (
         <>
           <View style={styles.stepperRow}>
-            <TouchableOpacity style={styles.stepBtn} onPress={() => stepMinutes(-2)}>
-              <Text style={styles.stepBtnText}>−2</Text>
+            <TouchableOpacity style={styles.stepBtn} onPress={() => stepMinutes(-5)}>
+              <Text style={styles.stepBtnText}>−5</Text>
             </TouchableOpacity>
 
             <View style={styles.minutesBox}>
@@ -136,8 +136,8 @@ export default function TaskTimer({ initialTaskName = "" }: { initialTaskName?: 
               </Text>
             </View>
 
-            <TouchableOpacity style={styles.stepBtn} onPress={() => stepMinutes(+2)}>
-              <Text style={styles.stepBtnText}>+2</Text>
+            <TouchableOpacity style={styles.stepBtn} onPress={() => stepMinutes(+5)}>
+              <Text style={styles.stepBtnText}>+5</Text>
             </TouchableOpacity>
           </View>
 
