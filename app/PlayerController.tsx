@@ -1,7 +1,5 @@
 import { useAudio } from '@/components/AudioManager';
 import { useCurrency } from '@/components/CurrencyContext';
-import DecorTree from '@/components/DecorTree';
-import Pumpkin from '@/components/Pumpkin';
 import { useTodo } from '@/components/TodoContext';
 import { Image } from 'expo-image';
 import React, { useEffect, useRef, useState } from 'react';
@@ -14,7 +12,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Rainbow from '../components/Rainbow';
+import DecorTree from '../components/DecorTree';
+import Pumpkin from '../components/Pumpkin';
 
 // Use require() for images with spaces in filenames
 const girlImg = require('../assets/images/girl-front2.png');
@@ -93,7 +92,6 @@ export default function PlayerController({
   outfit = '🧑',
   playerRef,
   showControls = true,
-  isRaining = false,
 }: {
   pumpkins?: PumpkinItem[];
   setPumpkins?: (updater: (prev: PumpkinItem[]) => PumpkinItem[]) => void;
@@ -108,7 +106,6 @@ export default function PlayerController({
     reviveAllTrees?: () => void;
   } | null>;
   showControls?: boolean;
-  isRaining?: boolean;
 }) {
   const CHARACTER_SIZE = 40;
   const PUMPKIN_SIZE = 40;
@@ -289,6 +286,9 @@ export default function PlayerController({
   
   const animatedX = useRef(new Animated.Value(positionRef.current.x)).current;
   const animatedY = useRef(new Animated.Value(positionRef.current.y)).current;
+  // Subtle vertical bounce while walking
+  const bounce = useRef(new Animated.Value(0)).current;
+  const bounceAnimRef = useRef<Animated.CompositeAnimation | null>(null);
   const { add_currency, currentOutfit, pepperEffect } = useCurrency();
   const { playWalkingSound, stopWalkingSound, playPickupSound } = useAudio();
   
@@ -333,6 +333,34 @@ export default function PlayerController({
       stopWalkingSound();
     }
   }, [movementDirection, playWalkingSound, stopWalkingSound]);
+
+  // Start a subtle bounce animation while walking, stop/reset when idle
+  useEffect(() => {
+    if (movementDirection !== 'idle') {
+      // If already running, do nothing
+      if (!bounceAnimRef.current) {
+        const anim = Animated.loop(
+          Animated.sequence([
+            Animated.timing(bounce, { toValue: -6, duration: 220, useNativeDriver: true }),
+            Animated.timing(bounce, { toValue: 0, duration: 220, useNativeDriver: true }),
+          ])
+        );
+        bounceAnimRef.current = anim;
+        anim.start();
+      }
+    } else {
+      // Stop any running bounce animation and gently reset
+      if (bounceAnimRef.current) {
+        try { bounceAnimRef.current.stop(); } catch (e) { /* ignore */ }
+        bounceAnimRef.current = null;
+      }
+      Animated.timing(bounce, { toValue: 0, duration: 120, useNativeDriver: true }).start();
+    }
+
+    return () => {
+      // nothing to cleanup per-change; keep bounceAnimRef for stop on idle/unmount
+    };
+  }, [movementDirection, bounce]);
   
   const displayOutfit = currentOutfit ?? outfit;
 
@@ -840,11 +868,6 @@ export default function PlayerController({
           }}
           resizeMode="stretch"
         />
-
-        {/* Rainbow - visible when raining and all trees are alive */}
-        {isRaining && deadTrees.size === 0 && (
-          <Rainbow x={MAP_WIDTH - 280} y={40} size={160} zIndex={-10} />
-        )}
         
         {/* Trees positioned in world coordinates */}
         {treePositions?.map?.((t, i) => (
@@ -856,6 +879,7 @@ export default function PlayerController({
           style={[
             styles.character,
             { left: animatedX as any, top: animatedY as any },
+            { transform: [{ translateY: bounce as any }] },
           ]}
           pointerEvents="none"
         >
