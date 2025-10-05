@@ -23,7 +23,7 @@ const TodoList = ({
 }) => {
   // Grab everything from context, but treat deleteTodo as optional
   const todoApi = useTodo();
-  const { todos, addTodo, editTodo, completeTodo, setTimerTaskName } = todoApi;
+  const { todos, addTodo, editTodo, completeTodo, setTimerTaskName, abortTask } = todoApi;
   const deleteTodo =
     (todoApi as any).deleteTodo as undefined | ((id: string) => void);
 
@@ -123,6 +123,20 @@ const TodoList = ({
                   accessibilityLabel="Edit task"
                 >
                   <Text style={styles.iconText}>✏️</Text>
+                </Pressable>
+              )}
+
+              {/* Abort Task (hide if already completed) - kills a tree */}
+              {!item.completed && abortTask && (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.iconButton,
+                    pressed && styles.iconPressed,
+                  ]}
+                  onPress={() => abortTask(item.id)}
+                  accessibilityLabel="Abort task (kills a tree)"
+                >
+                  <Text style={styles.iconText}>🪓</Text>
                 </Pressable>
               )}
 

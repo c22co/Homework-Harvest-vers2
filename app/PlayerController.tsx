@@ -1,4 +1,5 @@
 import { useCurrency } from '@/components/CurrencyContext';
+import { useTodo } from '@/components/TodoContext';
 import DecorTree from '@/components/DecorTree';
 import Pumpkin from '@/components/Pumpkin';
 import { Image } from 'expo-image';
@@ -171,6 +172,13 @@ export default function PlayerController({
   };
 
   const [treePositions] = useState(() => generateTrees());
+  const [deadTrees, setDeadTrees] = useState<Set<number>>(new Set()); // Track dead trees by index
+  
+  // Todo context for tree killing functionality
+  const { setKillTreeCallback } = useTodo();
+  
+  // Track if component is ready for tree killing (prevent initial execution)
+  const isReadyForTreeKilling = useRef(false);
 
   // Tree collision detection helper - using smaller collision box for tree trunk
   const checkTreeCollision = (px: number, py: number) => {
@@ -316,6 +324,70 @@ export default function PlayerController({
   const touchPressed = useRef<Record<string, boolean>>({});
   const touchRafId = useRef<number | null>(null);
   const touchLastTimeRef = useRef<number | null>(null);
+
+  // Set up the kill tree callback
+  useEffect(() => {
+    if (setKillTreeCallback) {
+      const killTreeFunction = () => {
+        console.log('Kill tree function called, ready:', isReadyForTreeKilling.current); // Debug log
+        
+        // Prevent execution during initial setup
+        if (!isReadyForTreeKilling.current) {
+          console.log('Not ready for tree killing yet, ignoring call');
+          return;
+        }
+        
+        // Kill the closest alive tree to the player
+        const playerX = positionRef.current.x;
+        const playerY = positionRef.current.y;
+        
+        setDeadTrees(currentDeadTrees => {
+          let closestTreeIndex = -1;
+          let closestDistance = Infinity;
+          
+          console.log('Current dead trees:', currentDeadTrees.size); // Debug log
+          console.log('Player position:', playerX, playerY); // Debug log
+          
+          treePositions.forEach((tree, index) => {
+            // Skip if tree is already dead
+            if (currentDeadTrees.has(index)) return;
+            
+            // Calculate distance from player to tree
+            const distance = Math.sqrt(
+              Math.pow(tree.x - playerX, 2) + Math.pow(tree.y - playerY, 2)
+            );
+            
+            console.log(`Tree ${index} at (${tree.x}, ${tree.y}) distance: ${distance}`); // Debug log
+            
+            // Update closest tree if this one is closer
+            if (distance < closestDistance) {
+              closestDistance = distance;
+              closestTreeIndex = index;
+            }
+          });
+          
+          console.log('Closest tree index:', closestTreeIndex, 'distance:', closestDistance); // Debug log
+          
+          // Kill the closest tree if one was found
+          if (closestTreeIndex !== -1) {
+            console.log('Killing tree:', closestTreeIndex); // Debug log
+            return new Set([...currentDeadTrees, closestTreeIndex]);
+          }
+          
+          return currentDeadTrees;
+        });
+      };
+      
+      console.log('Setting kill tree callback'); // Debug log
+      setKillTreeCallback(killTreeFunction);
+      
+      // Set ready flag after a short delay to ensure component is fully mounted
+      setTimeout(() => {
+        isReadyForTreeKilling.current = true;
+        console.log('Now ready for tree killing');
+      }, 100);
+    }
+  }, [setKillTreeCallback, treePositions]);
 
   const checkCollision = (px: number, py: number) => {
     const playerRect = {
@@ -735,7 +807,7 @@ export default function PlayerController({
         
         {/* Trees positioned in world coordinates */}
         {treePositions?.map?.((t, i) => (
-          <DecorTree key={i} x={t.x} y={t.y} scale={t.scale} flip={t.flip} />
+          <DecorTree key={i} x={t.x} y={t.y} scale={t.scale} flip={t.flip} dead={deadTrees.has(i)} />
         ))}
 
         {/* Player character positioned in world coordinates but appears centered due to camera */}
