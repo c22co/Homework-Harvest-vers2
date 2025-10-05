@@ -1,17 +1,17 @@
 import PlayerController from '@/app/PlayerController';
 import AudioControl from '@/components/AudioControl';
+import { useAudio } from '@/components/AudioManager';
 import { CompletedTasks } from '@/components/CompletedTasks';
 import { useCurrency } from '@/components/CurrencyContext';
 import CurrencyDisplay from '@/components/CurrencyDisplay';
 import DraggableContainer from '@/components/DraggableContainer';
 import Rain from '@/components/Rain';
-import { useAudio } from '@/components/AudioManager';
 import TaskTimer from '@/components/TaskTimer';
 import { TodoProvider } from '@/components/TodoContext';
 import TodoList from '@/components/TodoList';
 import { useDraggablePosition } from '@/hooks/useDraggablePosition';
 import { router } from 'expo-router';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -31,7 +31,6 @@ export default function HomeScreen() {
   const [pumpkins, setPumpkins] = useState<PumpkinItem[]>([]);
   const [uiVisible, setUiVisible] = useState(true);
   const [isRaining, setIsRaining] = useState(false);
-  const [showRainbow, setShowRainbow] = useState(false);
   const { getPumpkinMultiplier } = useCurrency();
   const { playRain, stopRain } = useAudio();
 
@@ -53,7 +52,6 @@ export default function HomeScreen() {
     cameraX: number;
     cameraY: number;
     reviveAllTrees?: () => void;
-    getDeadTreesCount?: () => number;
   } | null>(null);
 
   // Callback to spawn pumpkin(s) in world coordinates near the player (avoiding trees)
@@ -67,7 +65,6 @@ export default function HomeScreen() {
     // Weather logic: if raining, stop it; if clear, 20% chance to start rain
     if (isRaining) {
       setIsRaining(false); // Stop rain if it's currently raining
-      setShowRainbow(false); // Hide rainbow when rain stops
     } else if (Math.random() < 0.2) {
       setIsRaining(true); // 20% chance to start rain if clear
       // When rain starts, revive all dead trees and return sprites to alive
@@ -185,13 +182,6 @@ export default function HomeScreen() {
         <Rain 
           isRaining={isRaining} 
           intensity={30} 
-          cameraX={playerRef.current?.cameraX || 0}
-          cameraY={playerRef.current?.cameraY || 0}
-        />
-        
-        {/* Rainbow - appears when rain starts and no dead trees */}
-        <Rainbow 
-          visible={showRainbow}
           cameraX={playerRef.current?.cameraX || 0}
           cameraY={playerRef.current?.cameraY || 0}
         />
