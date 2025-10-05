@@ -9,6 +9,9 @@ interface CurrencyContextType {
   setOwnedOutfits: (val: string[] | ((prev: string[]) => string[])) => void;
   currentOutfit: string;
   equipOutfit: (outfit: string) => boolean;
+  ownedSeeds: {[key: string]: number};
+  setOwnedSeeds: (val: {[key: string]: number} | ((prev: {[key: string]: number}) => {[key: string]: number})) => void;
+  getPumpkinMultiplier: () => number;
 }
 
 const CurrencyContext = createContext<CurrencyContextType>({} as CurrencyContextType);
@@ -17,6 +20,7 @@ export const CurrencyProvider = ({ children }: { children: React.ReactNode }) =>
   const [currency, setCurrency] = useState(200); // starting coins
   const [ownedOutfits, setOwnedOutfits] = useState<string[]>(['default']); // start with default outfit
   const [currentOutfit, setCurrentOutfit] = useState<string>('default');
+  const [ownedSeeds, setOwnedSeeds] = useState<{[key: string]: number}>({});
 
   // Add/subtract coins
   const add_currency = (val: number) => {
@@ -30,6 +34,12 @@ export const CurrencyProvider = ({ children }: { children: React.ReactNode }) =>
     return true;
   };
 
+  // Calculate pumpkin spawn multiplier based on owned pumpkin seeds
+  const getPumpkinMultiplier = () => {
+    const pumpkinSeeds = ownedSeeds['pumpkin'] || 0;
+    return Math.pow(2, pumpkinSeeds); // Each pumpkin seed doubles the spawn rate
+  };
+
   return (
     <CurrencyContext.Provider
       value={{
@@ -40,6 +50,9 @@ export const CurrencyProvider = ({ children }: { children: React.ReactNode }) =>
         setOwnedOutfits,
         currentOutfit,
         equipOutfit,
+        ownedSeeds,
+        setOwnedSeeds,
+        getPumpkinMultiplier,
       }}
     >
       {children}

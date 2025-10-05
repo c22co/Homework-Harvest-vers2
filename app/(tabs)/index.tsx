@@ -1,5 +1,6 @@
 import PlayerController from '@/app/PlayerController';
 import { CompletedTasks } from '@/components/CompletedTasks';
+import { useCurrency } from '@/components/CurrencyContext';
 import CurrencyDisplay from '@/components/CurrencyDisplay';
 import TaskTimer from '@/components/TaskTimer';
 import { TodoProvider } from '@/components/TodoContext';
@@ -22,6 +23,7 @@ export default function HomeScreen() {
   const [showCompleted, setShowCompleted] = useState(false);
   const [pumpkins, setPumpkins] = useState<PumpkinItem[]>([]);
   const [uiVisible, setUiVisible] = useState(true);
+  const { getPumpkinMultiplier } = useCurrency();
 
   // detect touch device for mobile controls
   const isTouchDevice =
@@ -36,36 +38,43 @@ export default function HomeScreen() {
     isPumpkinPositionSafe?: (x: number, y: number) => boolean;
   } | null>(null);
 
-  // Callback to spawn a pumpkin in world coordinates near the player (avoiding trees)
+  // Callback to spawn pumpkin(s) in world coordinates near the player (avoiding trees)
+  // Number of pumpkins spawned depends on owned pumpkin seeds
   const spawnPumpkin = () => {
-    const id = Date.now().toString();
+    const multiplier = getPumpkinMultiplier();
     const px = playerRef.current?.x ?? SCREEN_WIDTH / 2;
     const py = playerRef.current?.y ?? SCREEN_HEIGHT / 2;
     
-    let attempts = 0;
-    const maxAttempts = 50;
-    
-    while (attempts < maxAttempts) {
-      const offset = 120 + Math.random() * 200;
-      const angle = Math.random() * Math.PI * 2;
-      const x = px + Math.cos(angle) * offset;
-      const y = py + Math.sin(angle) * offset;
+    // Spawn multiple pumpkins based on multiplier
+    for (let i = 0; i < multiplier; i++) {
+      const id = `${Date.now()}-${i}`;
+      let attempts = 0;
+      const maxAttempts = 50;
       
-      // Check if position is within screen bounds
-      if (x >= 0 && x <= SCREEN_WIDTH - 40 && y >= 0 && y <= SCREEN_HEIGHT - 40) {
-        // Check if position is safe (not in trees)
-        if (playerRef.current?.isPumpkinPositionSafe?.(x, y)) {
-          setPumpkins(prev => [...prev, { id, x, y }]);
-          return;
+      while (attempts < maxAttempts) {
+        const offset = 120 + Math.random() * 200;
+        const angle = Math.random() * Math.PI * 2;
+        const x = px + Math.cos(angle) * offset;
+        const y = py + Math.sin(angle) * offset;
+        
+        // Check if position is within screen bounds
+        if (x >= 0 && x <= SCREEN_WIDTH - 40 && y >= 0 && y <= SCREEN_HEIGHT - 40) {
+          // Check if position is safe (not in trees)
+          if (playerRef.current?.isPumpkinPositionSafe?.(x, y)) {
+            setPumpkins(prev => [...prev, { id, x, y }]);
+            break; // Successfully spawned this pumpkin, move to next
+          }
         }
+        attempts++;
       }
-      attempts++;
+      
+      // Fallback: spawn at a safe distance from player if no safe position found
+      if (attempts >= maxAttempts) {
+        const fallbackX = Math.max(40, Math.min(SCREEN_WIDTH - 80, px + (i * 60) + 100));
+        const fallbackY = Math.max(40, Math.min(SCREEN_HEIGHT - 80, py + (i * 60) + 100));
+        setPumpkins(prev => [...prev, { id, x: fallbackX, y: fallbackY }]);
+      }
     }
-    
-    // Fallback: spawn at a safe distance from player if no safe position found
-    const fallbackX = Math.max(40, Math.min(SCREEN_WIDTH - 80, px + 100));
-    const fallbackY = Math.max(40, Math.min(SCREEN_HEIGHT - 80, py + 100));
-    setPumpkins(prev => [...prev, { id, x: fallbackX, y: fallbackY }]);
   };
 
   return (
