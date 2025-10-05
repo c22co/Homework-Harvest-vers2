@@ -2,6 +2,7 @@ import { useCurrency } from '@/components/CurrencyContext';
 import { useTodo } from '@/components/TodoContext';
 import { useAudio } from '@/components/AudioManager';
 import DecorTree from '@/components/DecorTree';
+import Rainbow from '../components/Rainbow';
 import Pumpkin from '@/components/Pumpkin';
 import { Image } from 'expo-image';
 import React, { useEffect, useRef, useState } from 'react';
@@ -92,6 +93,7 @@ export default function PlayerController({
   outfit = '🧑',
   playerRef,
   showControls = true,
+  isRaining = false,
 }: {
   pumpkins?: PumpkinItem[];
   setPumpkins?: (updater: (prev: PumpkinItem[]) => PumpkinItem[]) => void;
@@ -106,10 +108,11 @@ export default function PlayerController({
     reviveAllTrees?: () => void;
   } | null>;
   showControls?: boolean;
+  isRaining?: boolean;
 }) {
   const CHARACTER_SIZE = 40;
   const PUMPKIN_SIZE = 40;
-  const MOVE_SPEED_PX_PER_SEC = 240;
+  const MOVE_SPEED_PX_PER_SEC = 150;
 
   // Generate trees first so we can use them for collision detection
   const generateTrees = () => {
@@ -837,6 +840,11 @@ export default function PlayerController({
           }}
           resizeMode="stretch"
         />
+
+        {/* Rainbow - visible when raining and all trees are alive */}
+        {isRaining && deadTrees.size === 0 && (
+          <Rainbow x={MAP_WIDTH - 280} y={40} size={160} zIndex={-10} />
+        )}
         
         {/* Trees positioned in world coordinates */}
         {treePositions?.map?.((t, i) => (

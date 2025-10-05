@@ -109,6 +109,7 @@ export default function HomeScreen() {
           setPumpkins={setPumpkins}
           playerRef={playerRef}
           showControls={isTouchDevice}
+          isRaining={isRaining}
         />
 
         {/* UI Toggle Button - Top Center */}
