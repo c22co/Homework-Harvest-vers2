@@ -1,15 +1,15 @@
 // shoppingPage.tsx
 import { useCurrency } from '@/components/CurrencyContext';
 import { Image } from 'expo-image';
-import React, { useState } from 'react';
+import React from 'react';
 import {
-    Alert,
-    FlatList,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  FlatList,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 interface ShoppingPageProps {
@@ -24,10 +24,10 @@ const OUTFITS = [
   { id: 'cat', name: 'Cat', price: 100, image: require('@/assets/images/Cat Costume 2.png') },
 ];
 
-// Seeds inventory (no functionality yet)
+// Seeds inventory
 const SEEDS = [
-  { id: 'pumpkin', name: 'Pumpkin Seeds', price: 300, icon: '🎃' },
-  { id: 'pepper', name: 'Pepper Seeds', price: 400, icon: '🌶️' },
+  { id: 'pumpkin', name: 'Pumpkin Seeds', price: 300, icon: '🎃', description: 'Doubles pumpkins from completed tasks!' },
+  { id: 'pepper', name: 'Pepper Seeds', price: 400, icon: '🌶️', description: 'Coming soon...' },
 ];
 
 export default function ShoppingPage({
@@ -41,10 +41,9 @@ export default function ShoppingPage({
     setOwnedOutfits,
     currentOutfit,
     equipOutfit,
+    ownedSeeds,
+    setOwnedSeeds,
   } = useCurrency();
-
-  // Seed inventory state (for future functionality)
-  const [ownedSeeds, setOwnedSeeds] = useState<{[key: string]: number}>({});
 
   const handlePurchase = (outfitId: string, price: number) => {
     if (ownedOutfits.includes(outfitId)) {
@@ -132,6 +131,7 @@ export default function ShoppingPage({
           <View style={styles.itemInfo}>
             <Text style={styles.itemName}>{item.name}</Text>
             <Text style={styles.itemPrice}>{item.price} coins</Text>
+            <Text style={styles.seedDescription}>{item.description}</Text>
             {owned > 0 && <Text style={styles.ownedText}>Owned: {owned}</Text>}
           </View>
           <View style={styles.buttonContainer}>
@@ -149,16 +149,14 @@ export default function ShoppingPage({
 
   return (
     <View style={styles.container}>
-      {/* Top bar with coins + close button */}
+      {/* Top bar with coins + shop title */}
       <View style={styles.topBar}>
         <View style={styles.coinDisplay}>
           <Image source={require('@/assets/images/Coin.png')} style={styles.coinIcon} />
           <Text style={styles.currencyText}>{currency ?? 0} coins</Text>
         </View>
         <Text style={styles.shopTitle}>Shop</Text>
-        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-          <Text style={styles.closeButtonText}>Close</Text>
-        </TouchableOpacity>
+        <View style={styles.spacer} />
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -228,15 +226,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
-  closeButton: { 
-    padding: 8,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 8,
-  },
-  closeButtonText: { 
-    color: '#8B4513', 
-    fontSize: 14,
-    fontWeight: 'bold',
+  spacer: {
+    width: 60, // Same width as coinDisplay to balance layout
   },
   scrollView: {
     flex: 1,
@@ -306,6 +297,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#A0845C',
     fontWeight: '600',
+  },
+  seedDescription: {
+    fontSize: 12,
+    color: '#8B4513',
+    fontStyle: 'italic',
+    marginTop: 2,
   },
   ownedText: {
     fontSize: 12,
