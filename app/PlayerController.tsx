@@ -92,6 +92,7 @@ export default function PlayerController({
   outfit = '🧑',
   playerRef,
   showControls = true,
+  onPickup,
 }: {
   pumpkins?: PumpkinItem[];
   setPumpkins?: (updater: (prev: PumpkinItem[]) => PumpkinItem[]) => void;
@@ -106,6 +107,7 @@ export default function PlayerController({
     reviveAllTrees?: () => void;
   } | null>;
   showControls?: boolean;
+  onPickup?: (amount: number) => void;
 }) {
   const CHARACTER_SIZE = 40;
   const PUMPKIN_SIZE = 40;
@@ -470,6 +472,8 @@ export default function PlayerController({
         add_currency(reward);
         // Play pickup sound effect
         playPickupSound();
+        // Notify parent (UI) to show money gain animation if provided
+        try { onPickup?.(reward); } catch (e) { /* ignore */ }
       }
     }
   };
