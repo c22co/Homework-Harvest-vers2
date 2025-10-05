@@ -130,7 +130,7 @@ export default function PlayerController({
         // Generate random position within floor boundaries
         const x = FLOOR_LEFT_BOUNDARY + Math.random() * (FLOOR_RIGHT_BOUNDARY - FLOOR_LEFT_BOUNDARY);
         const y = FLOOR_TOP_BOUNDARY + Math.random() * (FLOOR_BOTTOM_BOUNDARY - FLOOR_TOP_BOUNDARY);
-        const scale = 1.2 + Math.random() * 0.8; // Random scale between 1.2 and 2.0
+        const scale = 1.7 + Math.random() * 1; // Random scale between 1.7 and 2.5
         
         // Check if position is outside safe zone around player spawn
         const distanceFromCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
@@ -269,7 +269,7 @@ export default function PlayerController({
   
   const animatedX = useRef(new Animated.Value(positionRef.current.x)).current;
   const animatedY = useRef(new Animated.Value(positionRef.current.y)).current;
-  const { add_currency, currentOutfit } = useCurrency();
+  const { add_currency, currentOutfit, pepperEffect } = useCurrency();
   
   // Movement direction state for character animation
   const [movementDirection, setMovementDirection] = useState<'idle' | 'walkingLeft' | 'walkingRight' | 'walkingUp' | 'walkingDown'>('idle');
@@ -292,9 +292,11 @@ export default function PlayerController({
     return getCurrentCostumeAnimation().flipX;
   };
   
-  // Get the scale for the current animation
+  // Get the scale for the current animation (including pepper effect)
   const getCurrentScale = () => {
-    return getCurrentCostumeAnimation().scale;
+    const baseScale = getCurrentCostumeAnimation().scale;
+    const pepperMultiplier = pepperEffect.active ? 6 : 2.0; // 6x bigger when pepper is active - SIGNIFICANTLY larger!
+    return baseScale * pepperMultiplier;
   };
   
   // Get the rotation for the current animation
@@ -753,6 +755,7 @@ export default function PlayerController({
               {
                 transform: [
                   { scaleX: shouldFlipCharacter() ? -getCurrentScale() : getCurrentScale() },
+                  { scaleY: getCurrentScale() }, // Add vertical scaling for proportional growth
                   { rotate: `${getCurrentRotation()}deg` }
                 ]
               }

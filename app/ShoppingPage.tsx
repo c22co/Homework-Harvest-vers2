@@ -27,7 +27,7 @@ const OUTFITS = [
 // Seeds inventory
 const SEEDS = [
   { id: 'pumpkin', name: 'Pumpkin Seeds', price: 300, icon: '🎃', description: 'Doubles pumpkins from completed tasks!' },
-  { id: 'pepper', name: 'Pepper Seeds', price: 400, icon: '🌶️', description: 'Coming soon...' },
+  { id: 'pepper', name: 'Pepper Seeds', price: 400, icon: '🌶️', description: 'Makes you bigger for 2 tasks!' },
 ];
 
 export default function ShoppingPage({
@@ -43,6 +43,9 @@ export default function ShoppingPage({
     equipOutfit,
     ownedSeeds,
     setOwnedSeeds,
+    useSeed,
+    activePumpkinBoost,
+    pepperEffect,
   } = useCurrency();
 
   const handlePurchase = (outfitId: string, price: number) => {
@@ -66,6 +69,15 @@ export default function ShoppingPage({
     }
     const success = equipOutfit(outfitId);
     if (success && typeof onOutfitChange === 'function') onOutfitChange(outfitId);
+  };
+
+  const handleUnequip = () => {
+    if (currentOutfit === 'default') {
+      Alert.alert('Already Default', 'You are already wearing the default outfit.');
+      return;
+    }
+    const success = equipOutfit('default');
+    if (success && typeof onOutfitChange === 'function') onOutfitChange('default');
   };
 
   const handleSeedPurchase = (seedId: string, price: number) => {
@@ -95,7 +107,12 @@ export default function ShoppingPage({
           </View>
           <View style={styles.buttonContainer}>
             {equipped ? (
-              <Text style={styles.equippedText}>Equipped</Text>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.unequipButton]}
+                onPress={handleUnequip}
+              >
+                <Text style={styles.buttonText}>Unequip</Text>
+              </TouchableOpacity>
             ) : owned ? (
               <TouchableOpacity
                 style={[styles.actionButton, styles.equipButton]}
@@ -119,6 +136,11 @@ export default function ShoppingPage({
 
   const renderSeed = ({ item }: { item: typeof SEEDS[0] }) => {
     const owned = ownedSeeds[item.id] || 0;
+    const canUse = owned > 0;
+    
+    // Check if effect is already active
+    const effectActive = item.id === 'pumpkin' ? activePumpkinBoost : 
+                        item.id === 'pepper' ? pepperEffect.active : false;
 
     return (
       <View style={styles.itemContainer}>
@@ -133,6 +155,12 @@ export default function ShoppingPage({
             <Text style={styles.itemPrice}>{item.price} coins</Text>
             <Text style={styles.seedDescription}>{item.description}</Text>
             {owned > 0 && <Text style={styles.ownedText}>Owned: {owned}</Text>}
+            {effectActive && (
+              <Text style={styles.activeEffectText}>
+                {item.id === 'pumpkin' ? 'Effect Active!' : 
+                 `Effect Active! (${pepperEffect.tasksRemaining} tasks left)`}
+              </Text>
+            )}
           </View>
           <View style={styles.buttonContainer}>
             <TouchableOpacity
@@ -141,6 +169,16 @@ export default function ShoppingPage({
             >
               <Text style={styles.buttonText}>Buy</Text>
             </TouchableOpacity>
+            {canUse && !effectActive && (
+              <TouchableOpacity
+                style={[styles.actionButton, styles.useButton]}
+                onPress={() => useSeed(item.id)}
+              >
+                <Text style={styles.buttonText}>
+                  {item.id === 'pumpkin' ? 'Use' : 'Eat'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </View>
@@ -310,9 +348,16 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 2,
   },
+  activeEffectText: {
+    fontSize: 12,
+    color: '#228B22',
+    fontWeight: 'bold',
+    marginTop: 2,
+  },
   buttonContainer: {
     minWidth: 80,
     alignItems: 'center',
+    gap: 4,
   },
   actionButton: {
     backgroundColor: '#8B4513',
@@ -322,8 +367,14 @@ const styles = StyleSheet.create({
     minWidth: 60,
     alignItems: 'center',
   },
+  useButton: {
+    backgroundColor: '#FF6347', // Tomato color for use/eat button
+  },
   equipButton: {
     backgroundColor: '#228B22', // Green for equip
+  },
+  unequipButton: {
+    backgroundColor: '#DC143C', // Crimson red for unequip
   },
   buttonText: {
     color: '#fff',
