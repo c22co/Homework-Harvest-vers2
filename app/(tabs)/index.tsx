@@ -2,6 +2,7 @@ import PlayerController from '@/app/PlayerController';
 import { CompletedTasks } from '@/components/CompletedTasks';
 import { useCurrency } from '@/components/CurrencyContext';
 import CurrencyDisplay from '@/components/CurrencyDisplay';
+import Rain from '@/components/Rain';
 import TaskTimer from '@/components/TaskTimer';
 import { TodoProvider } from '@/components/TodoContext';
 import TodoList from '@/components/TodoList';
@@ -23,6 +24,7 @@ export default function HomeScreen() {
   const [showCompleted, setShowCompleted] = useState(false);
   const [pumpkins, setPumpkins] = useState<PumpkinItem[]>([]);
   const [uiVisible, setUiVisible] = useState(true);
+  const [isRaining, setIsRaining] = useState(false);
   const { getPumpkinMultiplier } = useCurrency();
 
   // detect touch device for mobile controls
@@ -36,14 +38,28 @@ export default function HomeScreen() {
     y: number; 
     nudge: (dx: number, dy: number) => void;
     isPumpkinPositionSafe?: (x: number, y: number) => boolean;
+    cameraX: number;
+    cameraY: number;
+    reviveAllTrees?: () => void;
   } | null>(null);
 
   // Callback to spawn pumpkin(s) in world coordinates near the player (avoiding trees)
   // Number of pumpkins spawned depends on owned pumpkin seeds
+  // Weather changes: stops rain if raining, or 20% chance to start rain if clear
   const spawnPumpkin = () => {
     const multiplier = getPumpkinMultiplier();
     const px = playerRef.current?.x ?? SCREEN_WIDTH / 2;
     const py = playerRef.current?.y ?? SCREEN_HEIGHT / 2;
+    
+    // Weather logic: if raining, stop it; if clear, 20% chance to start rain
+    if (isRaining) {
+      setIsRaining(false); // Stop rain if it's currently raining
+    } else if (Math.random() < 0.2) {
+      setIsRaining(true); // 20% chance to start rain if clear
+      // When rain starts, revive all dead trees and return sprites to alive
+      const revive = playerRef.current?.reviveAllTrees;
+      if (revive) revive();
+    }
     
     // Spawn multiple pumpkins based on multiplier
     for (let i = 0; i < multiplier; i++) {
@@ -94,6 +110,14 @@ export default function HomeScreen() {
         >
           <Text style={styles.uiToggleText}>{uiVisible ? '👁️' : '👁️‍🗨️'}</Text>
         </TouchableOpacity>
+
+        {/* Rain Animation */}
+        <Rain 
+          isRaining={isRaining} 
+          intensity={30} 
+          cameraX={playerRef.current?.cameraX || 0}
+          cameraY={playerRef.current?.cameraY || 0}
+        />
 
         {/* UI Components - Positioned individually */}
         {uiVisible && (

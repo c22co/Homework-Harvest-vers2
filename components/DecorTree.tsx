@@ -16,10 +16,24 @@ export default function DecorTree({
   dead?: boolean;
 }) {
   const size = 96 * scale;
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-  const deadImageOpacity = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current; // alive tree opacity
+  const deadImageOpacity = useRef(new Animated.Value(0)).current; // dead tree opacity
+  const didMountRef = useRef(false);
   
   useEffect(() => {
+    // On first mount, snap to the correct state without animation to avoid flicker
+    if (!didMountRef.current) {
+      if (dead) {
+        fadeAnim.setValue(0);
+        deadImageOpacity.setValue(1);
+      } else {
+        fadeAnim.setValue(1);
+        deadImageOpacity.setValue(0);
+      }
+      didMountRef.current = true;
+      return;
+    }
+
     if (dead) {
       // Fade out alive tree, then fade in dead tree
       Animated.sequence([
@@ -35,9 +49,19 @@ export default function DecorTree({
         }),
       ]).start();
     } else {
-      // Reset to alive state
-      fadeAnim.setValue(1);
-      deadImageOpacity.setValue(0);
+      // Fade out dead tree, then fade in alive tree (mirror of death animation)
+      Animated.sequence([
+        Animated.timing(deadImageOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
   }, [dead, fadeAnim, deadImageOpacity]);
 

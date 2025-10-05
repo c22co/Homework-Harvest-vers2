@@ -102,6 +102,7 @@ export default function PlayerController({
     isPumpkinPositionSafe?: (x: number, y: number) => boolean;
     cameraX: number;
     cameraY: number;
+    reviveAllTrees?: () => void;
   } | null>;
   showControls?: boolean;
 }) {
@@ -181,6 +182,11 @@ export default function PlayerController({
   
   // Track if component is ready for tree killing (prevent initial execution)
   const isReadyForTreeKilling = useRef(false);
+
+  // Stable function to revive all trees (used by rain trigger)
+  const reviveAllTrees = React.useCallback(() => {
+    setDeadTrees(new Set());
+  }, []);
 
   // Tree collision detection helper - using smaller collision box for tree trunk
   const checkTreeCollision = (px: number, py: number) => {
@@ -739,7 +745,9 @@ export default function PlayerController({
   // Expose collision check function via playerRef for pumpkin spawning
   useEffect(() => {
     if (!playerRef) return;
+    // Preserve any existing fields on the ref and attach reviveAllTrees
     playerRef.current = {
+      ...(playerRef.current || {}),
       x: positionRef.current.x,
       y: positionRef.current.y,
       nudge: (dx: number, dy: number) => {
@@ -754,6 +762,8 @@ export default function PlayerController({
       // Expose camera position for world-to-screen coordinate conversion
       cameraX: (cameraX as any)._value || 0,
       cameraY: (cameraY as any)._value || 0,
+      // Expose tree revival method so HomeScreen can call it when rain starts
+      reviveAllTrees,
     };
 
     const iv = setInterval(() => {
