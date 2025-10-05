@@ -1,15 +1,17 @@
 // shoppingPage.tsx
 import { useCurrency } from '@/components/CurrencyContext';
 import { Image } from 'expo-image';
-import React from 'react';
+import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 
 interface ShoppingPageProps {
@@ -26,8 +28,8 @@ const OUTFITS = [
 
 // Seeds inventory
 const SEEDS = [
-  { id: 'pumpkin', name: 'Pumpkin Seeds', price: 300, icon: '🎃', description: 'Doubles pumpkins from completed tasks!' },
-  { id: 'pepper', name: 'Pepper Seeds', price: 400, icon: '🌶️', description: 'Makes you bigger for 2 tasks!' },
+  { id: 'pumpkin', name: 'Pumpkin Seeds', price: 300, image: require('@/assets/images/Pumpkin Seeds.png'), description: 'Doubles pumpkins from completed tasks!' },
+  { id: 'pepper', name: 'Pepper Seeds', price: 400, image: require('@/assets/images/Pepper Seeds.png'), description: 'Makes you bigger for 2 tasks!' },
 ];
 
 export default function ShoppingPage({
@@ -48,6 +50,9 @@ export default function ShoppingPage({
     pepperEffect,
   } = useCurrency();
 
+  const [loadingItems, setLoadingItems] = useState<{[key: string]: boolean}>({});
+  const [purchaseSuccess, setPurchaseSuccess] = useState<string | null>(null);
+
   const handlePurchase = (outfitId: string, price: number) => {
     if (ownedOutfits.includes(outfitId)) {
       Alert.alert('Already Owned', 'You already own this outfit.');
@@ -58,8 +63,17 @@ export default function ShoppingPage({
       return;
     }
 
-    add_currency(-price);
-    setOwnedOutfits(prev => [...prev, outfitId]);
+    setLoadingItems(prev => ({...prev, [outfitId]: true}));
+    
+    // Simulate purchase delay for better UX
+    setTimeout(() => {
+      add_currency(-price);
+      setOwnedOutfits(prev => [...prev, outfitId]);
+      setLoadingItems(prev => ({...prev, [outfitId]: false}));
+      setPurchaseSuccess(outfitId);
+      setTimeout(() => setPurchaseSuccess(null), 2000);
+      Alert.alert('Purchase Successful!', `You bought the ${outfitId} costume!`);
+    }, 500);
   };
 
   const handleEquip = (outfitId: string) => {
@@ -86,30 +100,52 @@ export default function ShoppingPage({
       return;
     }
 
-    add_currency(-price);
-    setOwnedSeeds(prev => ({ ...prev, [seedId]: (prev[seedId] || 0) + 1 }));
-    Alert.alert('Purchase Successful', 'Seeds added to inventory!');
+    setLoadingItems(prev => ({...prev, [seedId]: true}));
+    
+    // Simulate purchase delay for better UX
+    setTimeout(() => {
+      add_currency(-price);
+      setOwnedSeeds(prev => ({ ...prev, [seedId]: (prev[seedId] || 0) + 1 }));
+      setLoadingItems(prev => ({...prev, [seedId]: false}));
+      setPurchaseSuccess(seedId);
+      setTimeout(() => setPurchaseSuccess(null), 2000);
+      Alert.alert('Purchase Successful!', `You bought ${seedId} seeds!`);
+    }, 500);
   };
 
   const renderOutfit = ({ item }: { item: typeof OUTFITS[0] }) => {
     const owned = ownedOutfits.includes(item.id);
     const equipped = currentOutfit === item.id;
+    const isLoading = loadingItems[item.id];
+    const showSuccess = purchaseSuccess === item.id;
 
     return (
-      <View style={styles.itemContainer}>
+      <Pressable style={({ pressed }) => [
+        styles.itemContainer,
+        pressed && styles.itemPressed,
+        showSuccess && styles.successGlow
+      ]}>
         <View style={styles.itemContent}>
           <View style={styles.itemImageContainer}>
             <Image source={item.image} style={styles.costumeImage} />
+            {equipped && <View style={styles.equippedBadge}>
+              <Text style={styles.equippedBadgeText}>✓</Text>
+            </View>}
           </View>
           <View style={styles.itemInfo}>
             <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemPrice}>{item.price} coins</Text>
+            <Text style={styles.itemPrice}>
+              <Image source={require('@/assets/images/Coin.png')} style={styles.coinImage} />{item.price}
+            </Text>
+            {owned && !equipped && <Text style={styles.ownedText}>✓ Owned</Text>}
+            {equipped && <Text style={styles.equippedText}>Currently Equipped</Text>}
           </View>
           <View style={styles.buttonContainer}>
             {equipped ? (
               <TouchableOpacity
                 style={[styles.actionButton, styles.unequipButton]}
                 onPress={handleUnequip}
+                disabled={isLoading}
               >
                 <Text style={styles.buttonText}>Unequip</Text>
               </TouchableOpacity>
@@ -117,44 +153,68 @@ export default function ShoppingPage({
               <TouchableOpacity
                 style={[styles.actionButton, styles.equipButton]}
                 onPress={() => handleEquip(item.id)}
+                disabled={isLoading}
               >
                 <Text style={styles.buttonText}>Equip</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                style={styles.actionButton}
+                style={[
+                  styles.actionButton, 
+                  (currency < item.price) && styles.disabledButton
+                ]}
                 onPress={() => handlePurchase(item.id, item.price)}
+                disabled={isLoading || currency < item.price}
               >
-                <Text style={styles.buttonText}>Buy</Text>
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.buttonText}>Buy</Text>
+                )}
               </TouchableOpacity>
             )}
           </View>
         </View>
-      </View>
+      </Pressable>
     );
   };
 
   const renderSeed = ({ item }: { item: typeof SEEDS[0] }) => {
     const owned = ownedSeeds[item.id] || 0;
     const canUse = owned > 0;
+    const isLoading = loadingItems[item.id];
+    const showSuccess = purchaseSuccess === item.id;
     
     // Check if effect is already active
     const effectActive = item.id === 'pumpkin' ? activePumpkinBoost : 
                         item.id === 'pepper' ? pepperEffect.active : false;
 
     return (
-      <View style={styles.itemContainer}>
+      <Pressable style={({ pressed }) => [
+        styles.itemContainer,
+        pressed && styles.itemPressed,
+        showSuccess && styles.successGlow
+      ]}>
         <View style={styles.itemContent}>
           <View style={styles.itemImageContainer}>
             <View style={styles.seedIconContainer}>
-              <Text style={styles.seedIcon}>{item.icon}</Text>
+              <Image source={item.image} style={styles.seedImage} />
+              {effectActive && <View style={styles.activeBadge}>
+                <Text style={styles.activeBadgeText}>!</Text>
+              </View>}
             </View>
           </View>
           <View style={styles.itemInfo}>
             <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemPrice}>{item.price} coins</Text>
+            <Text style={styles.itemPrice}>
+              <Image source={require('@/assets/images/Coin.png')} style={styles.coinImage} />{item.price}
+            </Text>
             <Text style={styles.seedDescription}>{item.description}</Text>
-            {owned > 0 && <Text style={styles.ownedText}>Owned: {owned}</Text>}
+            {owned > 0 && (
+              <Text style={styles.ownedText}>
+                Owned: {owned}
+              </Text>
+            )}
             {effectActive && (
               <Text style={styles.activeEffectText}>
                 {item.id === 'pumpkin' ? 'Effect Active!' : 
@@ -164,10 +224,18 @@ export default function ShoppingPage({
           </View>
           <View style={styles.buttonContainer}>
             <TouchableOpacity
-              style={styles.actionButton}
+              style={[
+                styles.actionButton,
+                (currency < item.price) && styles.disabledButton
+              ]}
               onPress={() => handleSeedPurchase(item.id, item.price)}
+              disabled={isLoading || currency < item.price}
             >
-              <Text style={styles.buttonText}>Buy</Text>
+              {isLoading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.buttonText}>Buy</Text>
+              )}
             </TouchableOpacity>
             {canUse && !effectActive && (
               <TouchableOpacity
@@ -181,26 +249,32 @@ export default function ShoppingPage({
             )}
           </View>
         </View>
-      </View>
+      </Pressable>
     );
   };
 
   return (
     <View style={styles.container}>
-      {/* Top bar with coins + shop title */}
+      {/* Enhanced header with gradient background */}
       <View style={styles.topBar}>
         <View style={styles.coinDisplay}>
           <Image source={require('@/assets/images/Coin.png')} style={styles.coinIcon} />
-          <Text style={styles.currencyText}>{currency ?? 0} coins</Text>
+          <Text style={styles.currencyText}>{currency ?? 0}</Text>
         </View>
-        <Text style={styles.shopTitle}>Shop</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.shopTitle}>Shop</Text>
+          <Text style={styles.subtitle}>Costumes & Seeds</Text>
+        </View>
         <View style={styles.spacer} />
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Costumes Section */}
+        {/* Enhanced Costumes Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Costumes</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Costumes</Text>
+            <View style={styles.sectionDivider} />
+          </View>
           <FlatList
             data={OUTFITS}
             renderItem={renderOutfit}
@@ -210,9 +284,12 @@ export default function ShoppingPage({
           />
         </View>
 
-        {/* Seeds Section */}
+        {/* Enhanced Seeds Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Seeds</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Seeds</Text>
+            <View style={styles.sectionDivider} />
+          </View>
           <FlatList
             data={SEEDS}
             renderItem={renderSeed}
@@ -229,162 +306,278 @@ export default function ShoppingPage({
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#F5E6B8' // Warm beige background
+    backgroundColor: '#F8F3E8' // Lighter, more elegant background
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#D2A679', // Warm brown
-    borderBottomWidth: 2,
-    borderBottomColor: '#A0845C',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#D28B2F',
+    borderBottomWidth: 3,
+    borderBottomColor: '#B8751F',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
   },
   coinDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   coinIcon: {
+    width: 18,
+    height: 18,
+    marginRight: 6,
+  },
+  coinImage: {
     width: 16,
     height: 16,
     marginRight: 4,
   },
   currencyText: { 
-    color: '#8B4513', 
-    fontSize: 14, 
-    fontWeight: 'bold' 
+    color: '#ffffff', 
+    fontSize: 16, 
+    fontWeight: '800',
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  titleContainer: {
+    alignItems: 'center',
   },
   shopTitle: {
-    color: '#8B4513',
-    fontSize: 24,
-    fontWeight: 'bold',
+    color: '#ffffff',
+    fontSize: 26,
+    fontWeight: '900',
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  subtitle: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
+    textShadowColor: 'rgba(0,0,0,0.2)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
   },
   spacer: {
-    width: 60, // Same width as coinDisplay to balance layout
+    width: 80,
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
+    paddingTop: 8,
   },
   section: {
-    marginVertical: 12,
+    marginVertical: 16,
+  },
+  sectionHeader: {
+    marginBottom: 16,
+    alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '900',
     color: '#8B4513',
-    marginBottom: 12,
-    marginLeft: 8,
+    textAlign: 'center',
+    marginBottom: 8,
+    textShadowColor: 'rgba(0,0,0,0.1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  sectionDivider: {
+    width: 100,
+    height: 3,
+    backgroundColor: '#D28B2F',
+    borderRadius: 2,
   },
   sectionContent: {
-    gap: 8,
+    gap: 12,
   },
   itemContainer: {
-    backgroundColor: '#E6CC8A', // Light warm tan
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#D2A679',
+    borderColor: '#E8DCC0',
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  itemPressed: {
+    transform: [{ scale: 0.98 }],
+    shadowOpacity: 0.05,
+  },
+  successGlow: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#F8FFF8',
   },
   itemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: 16,
   },
   itemImageContainer: {
-    width: 60,
-    height: 60,
+    width: 70,
+    height: 70,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
+    position: 'relative',
   },
   costumeImage: {
-    width: 50,
-    height: 50,
+    width: 60,
+    height: 60,
     resizeMode: 'contain',
   },
-  seedIconContainer: {
-    width: 50,
-    height: 50,
-    backgroundColor: '#F5E6B8',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#D2A679',
+  equippedBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 24,
+    height: 24,
+    backgroundColor: '#4CAF50',
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
-  seedIcon: {
-    fontSize: 24,
+  equippedBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  seedIconContainer: {
+    width: 60,
+    height: 60,
+    backgroundColor: '#FFF8DC',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#E8DCC0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  seedImage: {
+    width: 48,
+    height: 48,
+    resizeMode: 'contain',
+  },
+  activeBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 24,
+    height: 24,
+    backgroundColor: '#FF9800',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  activeBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
   },
   itemInfo: {
     flex: 1,
-    paddingRight: 8,
+    paddingRight: 12,
   },
   itemName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#8B4513',
-    marginBottom: 2,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#2C1810',
+    marginBottom: 4,
   },
   itemPrice: {
-    fontSize: 14,
-    color: '#A0845C',
-    fontWeight: '600',
+    fontSize: 16,
+    color: '#8B4513',
+    fontWeight: '700',
+    marginBottom: 6,
   },
   seedDescription: {
-    fontSize: 12,
-    color: '#8B4513',
+    fontSize: 13,
+    color: '#6B4E3D',
     fontStyle: 'italic',
-    marginTop: 2,
+    marginBottom: 6,
+    lineHeight: 18,
   },
   ownedText: {
-    fontSize: 12,
-    color: '#8B4513',
-    fontStyle: 'italic',
-    marginTop: 2,
+    fontSize: 13,
+    color: '#4CAF50',
+    fontWeight: '600',
+    marginBottom: 3,
   },
   activeEffectText: {
-    fontSize: 12,
-    color: '#228B22',
-    fontWeight: 'bold',
-    marginTop: 2,
-  },
-  buttonContainer: {
-    minWidth: 80,
-    alignItems: 'center',
-    gap: 4,
-  },
-  actionButton: {
-    backgroundColor: '#8B4513',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    minWidth: 60,
-    alignItems: 'center',
-  },
-  useButton: {
-    backgroundColor: '#FF6347', // Tomato color for use/eat button
-  },
-  equipButton: {
-    backgroundColor: '#228B22', // Green for equip
-  },
-  unequipButton: {
-    backgroundColor: '#DC143C', // Crimson red for unequip
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 13,
+    color: '#FF9800',
+    fontWeight: '700',
+    marginBottom: 3,
   },
   equippedText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#228B22',
-    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#4CAF50',
+  },
+  buttonContainer: {
+    minWidth: 90,
+    alignItems: 'center',
+    gap: 8,
+  },
+  actionButton: {
+    backgroundColor: '#D28B2F',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    minWidth: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  disabledButton: {
+    backgroundColor: '#B0B0B0',
+    shadowOpacity: 0.1,
+  },
+  useButton: {
+    backgroundColor: '#FF6347',
+  },
+  equipButton: {
+    backgroundColor: '#4CAF50',
+  },
+  unequipButton: {
+    backgroundColor: '#F44336',
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
 });
