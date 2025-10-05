@@ -1,19 +1,6 @@
-import { CurrencyProvider } from '@/components/CurrencyContext';
-import { TodoProvider } from '@/components/TodoContext';
-import { Slot } from 'expo-router';
 import React from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTodo } from '@/components/TodoContext';
-
-export default function RootLayout() {
-  return (
-    <TodoProvider>
-      <CurrencyProvider>
-        <Slot />
-      </CurrencyProvider>
-    </TodoProvider>
-  );
-}
 
 export function CompletedTasks({ onBack }: { onBack: () => void }) {
   const { todos } = useTodo();

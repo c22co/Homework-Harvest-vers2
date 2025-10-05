@@ -1,15 +1,16 @@
+import { useCurrency } from '@/components/CurrencyContext';
 import { useTodo } from '@/components/TodoContext';
 import React, { useState } from 'react';
 import {
-    Button,
-    FlatList,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    useWindowDimensions,
-    View
+  Button,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useWindowDimensions,
+  View
 } from 'react-native';
 
 // removed top-level hook call that was here (calling useTodo at module scope was causing the error)
@@ -24,6 +25,7 @@ const TodoList = ({
   // Grab everything from context, but treat deleteTodo as optional
   const todoApi = useTodo();
   const { todos, addTodo, editTodo, completeTodo, setTimerTaskName, abortTask } = todoApi;
+  const { completeTask } = useCurrency();
   const deleteTodo =
     (todoApi as any).deleteTodo as undefined | ((id: string) => void);
 
@@ -99,6 +101,7 @@ const TodoList = ({
                 onPress={() => {
                   if (!item.completed) {
                     completeTodo(item.id);
+                    completeTask(); // Update seed effects
                     onTaskCompleted();
                   }
                 }}
