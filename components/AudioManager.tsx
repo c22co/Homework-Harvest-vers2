@@ -24,6 +24,7 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
   const rainSound = useRef<Audio.Sound | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isWalking, setIsWalking] = useState(false);
+  const [isRainPlaying, setIsRainPlaying] = useState(false);
 
   // Initialize audio when component mounts
   useEffect(() => {
@@ -175,9 +176,9 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
 
   const playRain = async () => {
     try {
-      if (rainSound.current && !isMuted) {
-        await rainSound.current.setPositionAsync(0);
+      if (rainSound.current && !isMuted && !isRainPlaying) {
         await rainSound.current.playAsync();
+        setIsRainPlaying(true);
       }
     } catch (error) {
       console.error('Error playing rain sound:', error);
@@ -186,9 +187,10 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
 
   const stopRain = async () => {
     try {
-      if (rainSound.current) {
+      if (rainSound.current && isRainPlaying) {
         await rainSound.current.pauseAsync();
         await rainSound.current.setPositionAsync(0);
+        setIsRainPlaying(false);
       }
     } catch (error) {
       console.error('Error stopping rain sound:', error);

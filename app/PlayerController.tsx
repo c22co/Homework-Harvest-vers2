@@ -374,11 +374,6 @@ export default function PlayerController({
   const keysPressed = useRef<Record<string, boolean>>({});
   const rafId = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
-  
-  // Touch control state for mobile
-  const touchPressed = useRef<Record<string, boolean>>({});
-  const touchRafId = useRef<number | null>(null);
-  const touchLastTimeRef = useRef<number | null>(null);
 
   // Set up the kill tree callback
   useEffect(() => {
@@ -609,122 +604,50 @@ export default function PlayerController({
     };
   }, []);
 
-  // Touch movement loop for continuous movement
-  const touchLoop = (time: number) => {
-    if (touchLastTimeRef.current == null) touchLastTimeRef.current = time;
-    const dtMs = time - touchLastTimeRef.current;
-    touchLastTimeRef.current = time;
-    const dt = dtMs / 1000;
-    let moved = false;
-
-    let newX = positionRef.current.x;
-    let newY = positionRef.current.y;
-    const delta = MOVE_SPEED_PX_PER_SEC * dt;
-
-    // Calculate intended movement direction from touch
+  // Touch control handlers - single tap movement
+  const handleTouchStart = (direction: string) => {
+    // Single step movement with animation
+    const MOVE_STEP = 30; // pixels per tap
     let deltaX = 0;
     let deltaY = 0;
+    let animDirection: 'idle' | 'walkingLeft' | 'walkingRight' | 'walkingUp' | 'walkingDown' = 'idle';
 
-    if (touchPressed.current['left']) {
-      deltaX -= delta;
-    }
-    if (touchPressed.current['right']) {
-      deltaX += delta;
-    }
-    if (touchPressed.current['up']) {
-      deltaY -= delta;
-    }
-    if (touchPressed.current['down']) {
-      deltaY += delta;
-    }
-
-    // Apply movement if there's any input
-    if (deltaX !== 0 || deltaY !== 0) {
-      // Calculate target position with bounds checking
-      const targetX = Math.max(0, Math.min(SCREEN_WIDTH - CHARACTER_SIZE, newX + deltaX));
-      const targetY = Math.max(0, Math.min(SCREEN_HEIGHT - CHARACTER_SIZE, newY + deltaY));
-
-      // First try the full diagonal movement
-      if (!checkTreeCollision(targetX, targetY)) {
-        // No collision - move to target position
-        newX = targetX;
-        newY = targetY;
-        moved = true;
-        
-        // Update movement direction based on dominant movement
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-          setMovementDirection(deltaX > 0 ? 'walkingRight' : 'walkingLeft');
-        } else {
-          setMovementDirection(deltaY > 0 ? 'walkingDown' : 'walkingUp');
-        }
-      } else {
-        // Collision detected with diagonal movement
-        // Try horizontal movement only
-        if (deltaX !== 0) {
-          const horizontalX = Math.max(0, Math.min(SCREEN_WIDTH - CHARACTER_SIZE, newX + deltaX));
-          if (!checkTreeCollision(horizontalX, newY)) {
-            newX = horizontalX;
-            moved = true;
-            setMovementDirection(deltaX > 0 ? 'walkingRight' : 'walkingLeft');
-          }
-        }
-        
-        // Try vertical movement only (separately, not combined with horizontal)
-        if (deltaY !== 0) {
-          const verticalY = Math.max(0, Math.min(SCREEN_HEIGHT - CHARACTER_SIZE, newY + deltaY));
-          if (!checkTreeCollision(newX, verticalY)) {
-            newY = verticalY;
-            moved = true;
-            setMovementDirection(deltaY > 0 ? 'walkingDown' : 'walkingUp');
-          }
-        }
-      }
+    switch (direction) {
+      case 'left':
+        deltaX = -MOVE_STEP;
+        animDirection = 'walkingLeft';
+        break;
+      case 'right':
+        deltaX = MOVE_STEP;
+        animDirection = 'walkingRight';
+        break;
+      case 'up':
+        deltaY = -MOVE_STEP;
+        animDirection = 'walkingUp';
+        break;
+      case 'down':
+        deltaY = MOVE_STEP;
+        animDirection = 'walkingDown';
+        break;
     }
 
-    if (moved) {
-      positionRef.current.x = newX;
-      positionRef.current.y = newY;
-      animatedX.setValue(newX);
-      animatedY.setValue(newY);
-      checkCollision(newX, newY);
-      touchRafId.current = requestAnimationFrame(touchLoop);
-    } else {
-      touchLastTimeRef.current = null;
-      touchRafId.current = null;
+    const newX = Math.min(Math.max(0, positionRef.current.x + deltaX), MAP_WIDTH - CHARACTER_SIZE);
+    const newY = Math.min(Math.max(0, positionRef.current.y + deltaY), MAP_HEIGHT - CHARACTER_SIZE);
+    
+    // Only move if it doesn't collide with trees and stays on floor
+    if (!checkTreeCollision(newX, newY) && checkFloorBoundary(newX, newY)) {
+      applyPosition(newX, newY);
+    }
+
+    // Show walking animation briefly
+    setMovementDirection(animDirection);
+    setTimeout(() => {
       setMovementDirection('idle');
-    }
-  };
-
-  const startTouchLoopIfNeeded = () => {
-    if (touchRafId.current == null) {
-      touchLastTimeRef.current = null;
-      touchRafId.current = requestAnimationFrame(touchLoop);
-    }
-  };
-
-  const stopTouchLoop = () => {
-    if (touchRafId.current != null) {
-      cancelAnimationFrame(touchRafId.current);
-      touchRafId.current = null;
-      touchLastTimeRef.current = null;
-    }
-  };
-
-  // Touch control handlers
-  const handleTouchStart = (direction: string) => {
-    touchPressed.current[direction] = true;
-    startTouchLoopIfNeeded();
+    }, 200); // Brief animation duration
   };
 
   const handleTouchEnd = (direction: string) => {
-    touchPressed.current[direction] = false;
-    
-    // Check if any touch buttons are still pressed
-    const anyPressed = Object.values(touchPressed.current).some(pressed => pressed);
-    if (!anyPressed) {
-      stopTouchLoop();
-      setMovementDirection('idle');
-    }
+    // No continuous movement, so nothing to handle on touch end
   };
 
   // Single tap nudge function (for backward compatibility)
@@ -737,15 +660,6 @@ export default function PlayerController({
       applyPosition(newX, newY);
     }
   };
-
-  // Cleanup touch loop on unmount
-  useEffect(() => {
-    return () => {
-      if (touchRafId.current != null) {
-        cancelAnimationFrame(touchRafId.current);
-      }
-    };
-  }, []);
 
   // Helper function to check if pumpkin position is safe (not in trees)
   const isPumpkinPositionSafe = (x: number, y: number) => {
