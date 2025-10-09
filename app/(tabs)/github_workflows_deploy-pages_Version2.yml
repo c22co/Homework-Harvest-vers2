@@ -25,18 +25,21 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+        working-directory: Homework-Harvest
 
       - name: Build static site for web
         run: npx expo export --platform web --public-url https://c22co.github.io/Homework-Harvest-vers2
+        working-directory: Homework-Harvest
 
       - name: Add SPA fallback (404 -> index)
         run: cp dist/index.html dist/404.html
+        working-directory: Homework-Harvest
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: Homework-Harvest/dist
 
   deploy:
     environment:
