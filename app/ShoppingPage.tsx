@@ -22,15 +22,15 @@ interface ShoppingPageProps {
 
 // Updated outfit IDs to match PlayerController costumeImages
 const OUTFITS = [
-  { id: 'alien', name: 'Alien', price: 50, image: require('@/assets/images/Alien Costume 2.png') },
-  { id: 'wizard', name: 'Wizard', price: 70, image: require('@/assets/images/Wizard Costume 2.png') },
-  { id: 'cat', name: 'Cat', price: 100, image: require('@/assets/images/Cat Costume 2.png') },
+  { id: 'alien', name: 'Alien', price: 1200, image: require('@/assets/images/Alien Costume 2.png') },
+  { id: 'wizard', name: 'Wizard', price: 2500, image: require('@/assets/images/Wizard Costume 2.png') },
+  { id: 'cat', name: 'Cat', price: 5000, image: require('@/assets/images/Cat Costume 2.png') },
 ];
 
 // Seeds inventory
 const SEEDS = [
-  { id: 'pumpkin', name: 'Pumpkin Seeds', price: 300, image: require('@/assets/images/Pumpkin Seeds.png'), description: 'Doubles pumpkins from completed tasks!' },
-  { id: 'pepper', name: 'Pepper Seeds', price: 400, image: require('@/assets/images/Pepper Seeds.png'), description: 'Makes you bigger for 2 tasks!' },
+  { id: 'pumpkin', name: 'Pumpkin Seeds', price: 600, image: require('@/assets/images/Pumpkin Seeds.png'), description: 'Doubles pumpkins from completed tasks!' },
+  { id: 'pepper', name: 'Pepper Seeds', price: 800, image: require('@/assets/images/Pepper Seeds.png'), description: 'Makes you bigger for 2 tasks!' },
 ];
 
 export default function ShoppingPage({
